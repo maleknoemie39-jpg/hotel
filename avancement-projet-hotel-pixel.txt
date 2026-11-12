@@ -1,0 +1,41 @@
+SUIVI D'AVANCEMENT — HOTEL PIXEL
+Projet : animations jeux video organisees dans un hotel
+Date du point d'avancement : 7 novembre 2026
+
+1. PRESENTATION DU PROJET
+
+L'objectif est de proposer au public un planning des animations autour des
+jeux video organisees dans un hotel.
+
+Technologies reperables dans le projet :
+- PHP pour les pages et le traitement des actions ;
+- MySQL pour les salles, les jeux et les evenements ;
+- HTML, CSS et JavaScript pour l'affichage et les interactions.
+
+2. TRAVAIL DEJA REALISE
+
+[FAIT] Planning public
+- Affichage des animations publiees pour la semaine en cours.
+- Selection d'une journee pour voir son programme.
+- Affichage des horaires, de la description, du jeu, de la salle et des
+  places restantes.
+- Indication d'une animation en cours ou de la prochaine animation du jour.
+
+[FAIT] Base de donnees
+- Tables pour les salles, jeux et evenements.
+- Des capacites initiales sont prevues pour plusieurs salles de l'hotel.
+
+3. RESTE A FAIRE OU A VERIFIER
+
+[A VERIFIER] Installation et tests
+- Importer base-de-donnees.sql et verifier la configuration de la connexion
+  MySQL dans config.php.
+- Verifier l'affichage sur ordinateur et telephone.
+
+[FAIT] Versionning avec Git
+- Depot Git initialise avec un premier commit.
+
+4. PROCHAINE ETAPE
+
+Priorite : importer la base de donnees, verifier l'affichage du planning et
+suivre l'avancement des versions du projet avec Git.
