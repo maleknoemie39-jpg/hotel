@@ -1,14 +1,13 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/bootstrap.php';
-
-$pdo = database();
+require_once __DIR__ . '/initialisation.php';
 
 $dateDebut = new DateTimeImmutable('today');
 $dateFin = $dateDebut->modify('+7 days');
 
-$requete = $pdo->prepare(
+$requete = mysqli_prepare(
+    $conn,
     "SELECT e.id_evenement, e.titre, e.description, e.type_evenement,
             e.date_debut, e.date_fin, e.nombre_place,
             GROUP_CONCAT(DISTINCT j.titre ORDER BY j.titre SEPARATOR ', ') AS jeux,
@@ -19,18 +18,21 @@ $requete = $pdo->prepare(
      LEFT JOIN derouler d ON d.id_evenement = e.id_evenement
      LEFT JOIN salle s ON s.id_salle = d.id_salle
      WHERE e.statut = 'PUBLIE'
-       AND e.date_debut >= :date_debut
-       AND e.date_debut < :date_fin
+       AND e.date_debut >= ?
+       AND e.date_debut < ?
      GROUP BY e.id_evenement, e.titre, e.description,
               e.type_evenement, e.date_debut, e.date_fin,
               e.nombre_place
      ORDER BY e.date_debut ASC"
 );
 
-$requete->execute([
-    'date_debut' => $dateDebut->format('Y-m-d H:i:s'),
-    'date_fin' => $dateFin->format('Y-m-d H:i:s'),
-]);
+$dateDebutSql = $dateDebut->format('Y-m-d H:i:s');
+$dateFinSql = $dateFin->format('Y-m-d H:i:s');
+mysqli_stmt_bind_param($requete, 'ss', $dateDebutSql, $dateFinSql);
+mysqli_stmt_execute($requete);
+$resultat = mysqli_stmt_get_result($requete);
+$evenementsBruts = mysqli_fetch_all($resultat, MYSQLI_ASSOC);
+mysqli_stmt_close($requete);
 
 $evenements = array_map(static function (array $evenement): array {
 
@@ -48,7 +50,7 @@ $evenements = array_map(static function (array $evenement): array {
         'jeux' => $evenement['jeux'] ?? '',
     ];
 
-}, $requete->fetchAll());
+}, $evenementsBruts);
 
 ?>
 
@@ -64,9 +66,9 @@ $evenements = array_map(static function (array $evenement): array {
     <meta name="description"
           content="Consultez le planning des animations jeux vidéo de l’hôtel.">
 
-    <title>Planning des animations — Hôtel Pixel</title>
+    <title>Planning de l'hôtel</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=<?= filemtime(__DIR__ . '/style.css') ?>">
 </head>
 
 <body>
@@ -93,7 +95,7 @@ $evenements = array_map(static function (array $evenement): array {
 
         <p class="petit-titre">Jouez, découvrez, partagez</p>
 
-        <h1 id="titre-page">Le planning des animations</h1>
+        <h1 id="titre-page">Le planning de l'hôtel</h1>
 
         <p class="texte-introduction">
             Retrouvez les horaires, les jeux et les salles des animations de la semaine.
