@@ -78,6 +78,7 @@ $evenements = array_map(static function (array $evenement): array {
     <div class="contenu-entete">
 
         <a class="logo" href="index.php">
+            <img src="logo-hotel.png" alt="">
             <span>
                 Les événements de l’hôtel
                 <small>LE PROGRAMME DE L’HÔTEL</small>
@@ -138,8 +139,6 @@ $evenements = array_map(static function (array $evenement): array {
 
                 <h3 id="date-selectionnee"></h3>
             </div>
-
-            <span class="compteur-evenements" id="nombre-evenements"></span>
 
         </div>
 

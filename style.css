@@ -21,9 +21,20 @@ body {
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   color: white;
   font-weight: bold;
   text-decoration: none;
+}
+
+.logo img {
+  width: 48px;
+  height: 48px;
+  border-radius: 5px;
+  object-fit: cover;
+  object-position: center;
 }
 
 .logo small {
@@ -318,6 +329,11 @@ a:focus-visible {
 }
 
 @media (max-width: 520px) {
+  .logo img {
+    width: 40px;
+    height: 40px;
+  }
+
   .page-principale {
     width: calc(100% - 22px);
     margin-top: 16px;
