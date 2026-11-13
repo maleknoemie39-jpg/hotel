@@ -1,66 +1,84 @@
-CREATE DATABASE IF NOT EXISTS hotel_pixel
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+CREATE TABLE Utilisateur(
+   id_utilisateur INT,
+   nom VARCHAR(50) ,
+   prenom VARCHAR(50) ,
+   email VARCHAR(50) ,
+   mot_de_passe VARCHAR(50) ,
+   rôle_utilisateur VARCHAR(50) ,
+   PRIMARY KEY(id_utilisateur)
+);
 
-USE hotel_pixel;
+CREATE TABLE Inscription(
+   id_inscription INT,
+   date_inscription DATE,
+   statut VARCHAR(50) ,
+   place_attribue VARCHAR(50) ,
+   PRIMARY KEY(id_inscription)
+);
 
-CREATE TABLE IF NOT EXISTS salle (
-  id_salle INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  nom VARCHAR(80) NOT NULL,
-  capacite INT UNSIGNED NOT NULL,
-  description TEXT NULL,
-  PRIMARY KEY (id_salle),
-  UNIQUE KEY uq_salle_nom (nom),
-  CONSTRAINT chk_salle_capacite CHECK (capacite > 0)
-) ENGINE=InnoDB;
+CREATE TABLE evenement(
+   id_evenement INT,
+   titre VARCHAR(50) ,
+   type_evenement VARCHAR(50) ,
+   description VARCHAR(50) ,
+   date_debut DATE,
+   date_fin DATE,
+   nombre_place INT,
+   statut VARCHAR(50) ,
+   date_creation DATE,
+   PRIMARY KEY(id_evenement)
+);
 
-CREATE TABLE IF NOT EXISTS jeux (
-  id_jeu INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  titre VARCHAR(100) NOT NULL,
-  plateforme VARCHAR(100) NOT NULL DEFAULT '',
-  genre VARCHAR(50) NOT NULL DEFAULT '',
-  description TEXT NULL,
-  image VARCHAR(255) NULL,
-  PRIMARY KEY (id_jeu),
-  UNIQUE KEY uq_jeu_titre_plateforme (titre, plateforme)
-) ENGINE=InnoDB;
+CREATE TABLE jeux(
+   id_jeu INT,
+   titre VARCHAR(50) ,
+   plateforme VARCHAR(50) ,
+   genre VARCHAR(50) ,
+   description VARCHAR(50) ,
+   image VARCHAR(50) ,
+   PRIMARY KEY(id_jeu)
+);
 
-CREATE TABLE IF NOT EXISTS evenement (
-  id_evenement INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  titre VARCHAR(100) NOT NULL,
-  description TEXT NOT NULL,
-  type_evenement VARCHAR(50) NOT NULL,
-  date_debut DATETIME NOT NULL,
-  date_fin DATETIME NOT NULL,
-  nombre_place INT UNSIGNED NOT NULL,
-  statut ENUM('BROUILLON', 'PUBLIE', 'ANNULE') NOT NULL DEFAULT 'PUBLIE',
-  date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id_evenement),
-  KEY idx_evenement_agenda (statut, date_debut),
-  CONSTRAINT chk_evenement_dates CHECK (date_fin > date_debut),
-  CONSTRAINT chk_evenement_places CHECK (nombre_place > 0)
-) ENGINE=InnoDB;
+CREATE TABLE salle(
+   id_salle INT,
+   nom VARCHAR(50) ,
+   capacite INT,
+   description VARCHAR(50) ,
+   PRIMARY KEY(id_salle)
+);
 
-CREATE TABLE IF NOT EXISTS lier (
-  id_evenement INT UNSIGNED NOT NULL,
-  id_jeu INT UNSIGNED NOT NULL,
-  PRIMARY KEY (id_evenement, id_jeu),
-  CONSTRAINT fk_lier_evenement
-    FOREIGN KEY (id_evenement) REFERENCES evenement(id_evenement) ON DELETE CASCADE,
-  CONSTRAINT fk_lier_jeu
-    FOREIGN KEY (id_jeu) REFERENCES jeux(id_jeu)
-) ENGINE=InnoDB;
+CREATE TABLE Inscrire(
+   id_utilisateur INT,
+   id_inscription INT,
+   PRIMARY KEY(id_utilisateur, id_inscription),
+   FOREIGN KEY(id_utilisateur) REFERENCES Utilisateur(id_utilisateur),
+   FOREIGN KEY(id_inscription) REFERENCES Inscription(id_inscription)
+);
 
-CREATE TABLE IF NOT EXISTS derouler (
-  id_evenement INT UNSIGNED NOT NULL,
-  id_salle INT UNSIGNED NOT NULL,
-  PRIMARY KEY (id_evenement, id_salle),
-  KEY idx_derouler_salle (id_salle),
-  CONSTRAINT fk_derouler_evenement
-    FOREIGN KEY (id_evenement) REFERENCES evenement(id_evenement) ON DELETE CASCADE,
-  CONSTRAINT fk_derouler_salle
-    FOREIGN KEY (id_salle) REFERENCES salle(id_salle)
-) ENGINE=InnoDB;
+CREATE TABLE concerne(
+   id_inscription INT,
+   id_evenement INT,
+   PRIMARY KEY(id_inscription, id_evenement),
+   FOREIGN KEY(id_inscription) REFERENCES Inscription(id_inscription),
+   FOREIGN KEY(id_evenement) REFERENCES evenement(id_evenement)
+);
+
+CREATE TABLE lier(
+   id_evenement INT,
+   id_jeu INT,
+   PRIMARY KEY(id_evenement, id_jeu),
+   FOREIGN KEY(id_evenement) REFERENCES evenement(id_evenement),
+   FOREIGN KEY(id_jeu) REFERENCES jeux(id_jeu)
+);
+
+CREATE TABLE derouler(
+   id_evenement INT,
+   id_salle INT,
+   PRIMARY KEY(id_evenement, id_salle),
+   FOREIGN KEY(id_evenement) REFERENCES evenement(id_evenement),
+   FOREIGN KEY(id_salle) REFERENCES salle(id_salle)
+);
+
 
 INSERT INTO salle (nom, capacite, description) VALUES
   ('Salle Arcade', 20, 'Consoles et jeux rétro'),
