@@ -4,12 +4,15 @@ declare(strict_types=1);
 require_once __DIR__ . '/commun.php';
 
 $utilisateur = utilisateur_connecte();
-$idUtilisateur = $utilisateur === null ? 0 : (int) $utilisateur['id'];
+$idUtilisateur = 0;
+if ($utilisateur !== null) {
+    $idUtilisateur = (int) $utilisateur['id'];
+}
 $dateDebut = new DateTimeImmutable('today');
 $dateFin = $dateDebut->modify('+7 days');
 
 // Charger les événements publiés de la semaine et compter les places réservées.
-$sql = "SELECT e.id_evenement, e.titre, e.description, e.type_evenement,
+$sqlEvenements = "SELECT e.id_evenement, e.titre, e.description, e.type_evenement,
                e.date_debut, e.date_fin, e.nombre_place,
                GROUP_CONCAT(DISTINCT j.titre ORDER BY j.titre SEPARATOR ', ') AS jeux,
                GROUP_CONCAT(DISTINCT s.nom ORDER BY s.nom SEPARATOR ', ') AS salles,
@@ -26,13 +29,13 @@ $sql = "SELECT e.id_evenement, e.titre, e.description, e.type_evenement,
         GROUP BY e.id_evenement, e.titre, e.description, e.type_evenement,
                  e.date_debut, e.date_fin, e.nombre_place
         ORDER BY e.date_debut";
-$requete = mysqli_prepare($conn, $sql);
+$requeteEvenements = mysqli_prepare($conn, $sqlEvenements);
 $debutSql = $dateDebut->format('Y-m-d H:i:s');
 $finSql = $dateFin->format('Y-m-d H:i:s');
-mysqli_stmt_bind_param($requete, 'iss', $idUtilisateur, $debutSql, $finSql);
-mysqli_stmt_execute($requete);
-$evenementsBruts = mysqli_fetch_all(mysqli_stmt_get_result($requete), MYSQLI_ASSOC);
-mysqli_stmt_close($requete);
+mysqli_stmt_bind_param($requeteEvenements, 'iss', $idUtilisateur, $debutSql, $finSql);
+mysqli_stmt_execute($requeteEvenements);
+$evenementsBruts = mysqli_fetch_all(mysqli_stmt_get_result($requeteEvenements), MYSQLI_ASSOC);
+mysqli_stmt_close($requeteEvenements);
 
 // Préparer les informations que le planning JavaScript va afficher.
 $evenements = [];
@@ -62,7 +65,10 @@ $messages = [
     'erreur' => 'La demande n’a pas pu être vérifiée. Rechargez la page.',
 ];
 $cleMessage = $_GET['message'] ?? '';
-$message = is_string($cleMessage) ? ($messages[$cleMessage] ?? '') : '';
+$message = '';
+if (is_string($cleMessage)) {
+    $message = $messages[$cleMessage] ?? '';
+}
 $jetonCsrf = jeton_csrf();
 ?>
 <!doctype html>

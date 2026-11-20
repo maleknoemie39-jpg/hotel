@@ -10,27 +10,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idEvenement = filter_input(INPUT_POST, 'id_evenement', FILTER_VALIDATE_INT);
 
     // Annuler uniquement une réservation qui appartient au client connecté.
-    if (!verifier_csrf() || $idEvenement === false || $idEvenement === null || $idEvenement < 1) {
+    if (
+        !verifier_csrf()
+        || $idEvenement === false
+        || $idEvenement === null
+        || $idEvenement < 1
+    ) {
         $message = 'La demande n’a pas pu être vérifiée. Rechargez la page.';
     } else {
-        $requete = mysqli_prepare(
+        $requeteAnnulation = mysqli_prepare(
             $conn,
             "UPDATE inscrire
              SET statut = 'ANNULEE'
              WHERE id_evenement = ? AND id_utilisateur = ? AND statut = 'CONFIRMEE'"
         );
-        mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $utilisateur['id']);
-        mysqli_stmt_execute($requete);
-        $annulationEffectuee = mysqli_stmt_affected_rows($requete) > 0;
-        mysqli_stmt_close($requete);
-        $message = $annulationEffectuee
-            ? 'Votre place a été libérée.'
-            : 'Cette inscription est déjà annulée ou introuvable.';
+        mysqli_stmt_bind_param($requeteAnnulation, 'ii', $idEvenement, $utilisateur['id']);
+        mysqli_stmt_execute($requeteAnnulation);
+        $annulationEffectuee = mysqli_stmt_affected_rows($requeteAnnulation) > 0;
+        mysqli_stmt_close($requeteAnnulation);
+        if ($annulationEffectuee) {
+            $message = 'Votre place a été libérée.';
+        } else {
+            $message = 'Cette inscription est déjà annulée ou introuvable.';
+        }
     }
 }
 
 // Afficher les réservations du client connecté.
-$requete = mysqli_prepare(
+$requeteInscriptions = mysqli_prepare(
     $conn,
     "SELECT i.id_evenement, i.statut, e.titre, e.date_debut, e.date_fin, s.nom AS salle
      FROM inscrire i
@@ -40,10 +47,10 @@ $requete = mysqli_prepare(
      WHERE i.id_utilisateur = ?
      ORDER BY e.date_debut DESC"
 );
-mysqli_stmt_bind_param($requete, 'i', $utilisateur['id']);
-mysqli_stmt_execute($requete);
-$inscriptions = mysqli_fetch_all(mysqli_stmt_get_result($requete), MYSQLI_ASSOC);
-mysqli_stmt_close($requete);
+mysqli_stmt_bind_param($requeteInscriptions, 'i', $utilisateur['id']);
+mysqli_stmt_execute($requeteInscriptions);
+$inscriptions = mysqli_fetch_all(mysqli_stmt_get_result($requeteInscriptions), MYSQLI_ASSOC);
+mysqli_stmt_close($requeteInscriptions);
 ?>
 <!doctype html>
 <html lang="fr">
@@ -56,7 +63,10 @@ mysqli_stmt_close($requete);
 <body>
 <header class="entete">
     <div class="contenu-entete">
-        <a class="logo" href="index.php"><img src="logo-hotel.png" alt=""><span>Les événements de l’hôtel<small>LE PROGRAMME DE L’HÔTEL</small></span></a>
+        <a class="logo" href="index.php">
+            <img src="logo-hotel.png" alt="">
+            <span>Les événements de l’hôtel<small>LE PROGRAMME DE L’HÔTEL</small></span>
+        </a>
         <nav class="navigation-compte">
             <a href="index.php">Planning public</a>
             <a href="deconnexion.php">Déconnexion</a>
@@ -71,7 +81,10 @@ mysqli_stmt_close($requete);
             <p class="message-info" role="status"><?= h($message) ?></p>
         <?php endif; ?>
         <?php if ($inscriptions === []): ?>
-            <div class="aucun-evenement"><strong>Vous n’êtes inscrit à aucun événement.</strong><p>Consultez le planning et réservez votre place.</p></div>
+            <div class="aucun-evenement">
+                <strong>Vous n’êtes inscrit à aucun événement.</strong>
+                <p>Consultez le planning et réservez votre place.</p>
+            </div>
         <?php else: ?>
             <div class="liste-evenements">
                 <?php foreach ($inscriptions as $inscription): ?>

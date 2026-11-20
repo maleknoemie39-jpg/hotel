@@ -14,35 +14,40 @@ if ($formulaireEnvoye && !verifier_csrf()) {
     $motDePasse = (string) ($_POST['mot_de_passe'] ?? '');
 
     // Chercher le compte qui correspond à l'adresse e-mail.
-    $requete = mysqli_prepare(
+    $requeteCompte = mysqli_prepare(
         $conn,
-        "SELECT u.id_utilisateur, u.nom, u.prenom, u.mot_de_passe,
-                CASE WHEN a.id_utilisateur IS NULL THEN 'CLIENT' ELSE 'ADMIN' END AS role_utilisateur
+        'SELECT u.id_utilisateur, u.nom, u.prenom, u.mot_de_passe,
+                a.id_utilisateur AS id_admin
          FROM utilisateur u
          LEFT JOIN admin a ON a.id_utilisateur = u.id_utilisateur
          WHERE u.email = ?
-         LIMIT 1"
+         LIMIT 1'
     );
-    mysqli_stmt_bind_param($requete, 's', $email);
-    mysqli_stmt_execute($requete);
-    $compte = mysqli_fetch_assoc(mysqli_stmt_get_result($requete));
-    mysqli_stmt_close($requete);
+    mysqli_stmt_bind_param($requeteCompte, 's', $email);
+    mysqli_stmt_execute($requeteCompte);
+    $compte = mysqli_fetch_assoc(mysqli_stmt_get_result($requeteCompte));
+    mysqli_stmt_close($requeteCompte);
 
     // Comparer le mot de passe saisi avec celui enregistré.
     if ($compte === null || !password_verify($motDePasse, $compte['mot_de_passe'])) {
         $erreur = 'Adresse e-mail ou mot de passe incorrect.';
     } else {
+        $role = 'CLIENT';
+        if ($compte['id_admin'] !== null) {
+            $role = 'ADMIN';
+        }
+
         // Garder les informations du compte pour les prochaines pages.
         session_regenerate_id(true);
         $_SESSION['utilisateur'] = [
             'id' => (int) $compte['id_utilisateur'],
             'nom' => $compte['nom'],
             'prenom' => $compte['prenom'],
-            'role' => $compte['role_utilisateur'],
+            'role' => $role,
         ];
         unset($_SESSION['jeton_csrf']);
 
-        if ($compte['role_utilisateur'] === 'ADMIN') {
+        if ($role === 'ADMIN') {
             header('Location: admin.php');
         } else {
             header('Location: index.php');

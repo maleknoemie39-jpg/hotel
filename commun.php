@@ -32,17 +32,21 @@ function verifier_csrf(): bool
 {
     $jeton = $_POST['jeton_csrf'] ?? '';
 
-    return is_string($jeton)
-        && isset($_SESSION['jeton_csrf'])
-        && hash_equals($_SESSION['jeton_csrf'], $jeton);
+    if (!is_string($jeton) || !isset($_SESSION['jeton_csrf'])) {
+        return false;
+    }
+
+    return hash_equals($_SESSION['jeton_csrf'], $jeton);
 }
 
 // Renvoyer le compte connecté, ou null si personne n'est connecté.
 function utilisateur_connecte(): ?array
 {
-    return isset($_SESSION['utilisateur']) && is_array($_SESSION['utilisateur'])
-        ? $_SESSION['utilisateur']
-        : null;
+    if (!isset($_SESSION['utilisateur']) || !is_array($_SESSION['utilisateur'])) {
+        return null;
+    }
+
+    return $_SESSION['utilisateur'];
 }
 
 // Empêcher l'accès à une page si le compte n'a pas le bon rôle.

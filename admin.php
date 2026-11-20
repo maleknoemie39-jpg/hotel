@@ -22,10 +22,16 @@ if ($estEnvoi && $erreur === '') {
     $idJeu = filter_input(INPUT_POST, 'id_jeu', FILTER_VALIDATE_INT);
     $debut = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $debutSaisi);
     $fin = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $finSaisie);
+    $debutValide = $debut !== false && $debut->format('Y-m-d\TH:i') === $debutSaisi;
+    $finValide = $fin !== false && $fin->format('Y-m-d\TH:i') === $finSaisie;
 
-    if ($titre === '' || strlen($titre) > 100 || $type === '' || strlen($type) > 50 || $description === '') {
+    if (
+        $titre === '' || strlen($titre) > 100
+        || $type === '' || strlen($type) > 50
+        || $description === ''
+    ) {
         $erreur = 'Renseignez le titre, le type et la description de l’événement.';
-    } elseif (!$debut || $debut->format('Y-m-d\TH:i') !== $debutSaisi || !$fin || $fin->format('Y-m-d\TH:i') !== $finSaisie) {
+    } elseif (!$debutValide || !$finValide) {
         $erreur = 'Les dates et heures indiquées ne sont pas valides.';
     } elseif ($fin <= $debut || $debut < new DateTimeImmutable('now')) {
         $erreur = 'La fin doit être après le début et l’événement ne peut pas être dans le passé.';
@@ -36,16 +42,16 @@ if ($estEnvoi && $erreur === '') {
 
 // Vérifier que la salle et le jeu choisis existent.
 if ($estEnvoi && $erreur === '') {
-    $requete = mysqli_prepare(
+    $requeteSalleJeu = mysqli_prepare(
         $conn,
         'SELECT s.capacite
          FROM salle s JOIN jeux j ON j.id_jeu = ?
          WHERE s.id_salle = ?'
     );
-    mysqli_stmt_bind_param($requete, 'ii', $idJeu, $idSalle);
-    mysqli_stmt_execute($requete);
-    $salle = mysqli_fetch_assoc(mysqli_stmt_get_result($requete));
-    mysqli_stmt_close($requete);
+    mysqli_stmt_bind_param($requeteSalleJeu, 'ii', $idJeu, $idSalle);
+    mysqli_stmt_execute($requeteSalleJeu);
+    $salle = mysqli_fetch_assoc(mysqli_stmt_get_result($requeteSalleJeu));
+    mysqli_stmt_close($requeteSalleJeu);
 
     if ($salle === null || (int) $salle['capacite'] < 1) {
         $erreur = 'Le jeu ou la salle sélectionné est invalide.';
@@ -61,31 +67,31 @@ if ($estEnvoi && $erreur === '') {
     try {
         mysqli_begin_transaction($conn);
 
-        $requete = mysqli_prepare(
+        $requeteEvenement = mysqli_prepare(
             $conn,
             "INSERT INTO evenement
              (titre, type_evenement, description, date_debut, date_fin, nombre_place, statut, date_creation)
              VALUES (?, ?, ?, ?, ?, ?, 'PUBLIE', NOW())"
         );
-        mysqli_stmt_bind_param($requete, 'sssssi', $titre, $type, $description, $dateDebutSql, $dateFinSql, $places);
-        mysqli_stmt_execute($requete);
+        mysqli_stmt_bind_param($requeteEvenement, 'sssssi', $titre, $type, $description, $dateDebutSql, $dateFinSql, $places);
+        mysqli_stmt_execute($requeteEvenement);
         $idEvenement = mysqli_insert_id($conn);
-        mysqli_stmt_close($requete);
+        mysqli_stmt_close($requeteEvenement);
 
-        $requete = mysqli_prepare($conn, 'INSERT INTO gerer (id_utilisateur, id_evenement) VALUES (?, ?)');
-        mysqli_stmt_bind_param($requete, 'ii', $utilisateur['id'], $idEvenement);
-        mysqli_stmt_execute($requete);
-        mysqli_stmt_close($requete);
+        $requeteResponsable = mysqli_prepare($conn, 'INSERT INTO gerer (id_utilisateur, id_evenement) VALUES (?, ?)');
+        mysqli_stmt_bind_param($requeteResponsable, 'ii', $utilisateur['id'], $idEvenement);
+        mysqli_stmt_execute($requeteResponsable);
+        mysqli_stmt_close($requeteResponsable);
 
-        $requete = mysqli_prepare($conn, 'INSERT INTO derouler (id_evenement, id_salle) VALUES (?, ?)');
-        mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $idSalle);
-        mysqli_stmt_execute($requete);
-        mysqli_stmt_close($requete);
+        $requeteSalle = mysqli_prepare($conn, 'INSERT INTO derouler (id_evenement, id_salle) VALUES (?, ?)');
+        mysqli_stmt_bind_param($requeteSalle, 'ii', $idEvenement, $idSalle);
+        mysqli_stmt_execute($requeteSalle);
+        mysqli_stmt_close($requeteSalle);
 
-        $requete = mysqli_prepare($conn, 'INSERT INTO lier (id_evenement, id_jeu) VALUES (?, ?)');
-        mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $idJeu);
-        mysqli_stmt_execute($requete);
-        mysqli_stmt_close($requete);
+        $requeteJeu = mysqli_prepare($conn, 'INSERT INTO lier (id_evenement, id_jeu) VALUES (?, ?)');
+        mysqli_stmt_bind_param($requeteJeu, 'ii', $idEvenement, $idJeu);
+        mysqli_stmt_execute($requeteJeu);
+        mysqli_stmt_close($requeteJeu);
 
         mysqli_commit($conn);
         header('Location: admin.php?cree=oui');
@@ -100,7 +106,7 @@ if ($estEnvoi && $erreur === '') {
 // Charger les choix du formulaire et les événements à venir.
 $salles = mysqli_query($conn, 'SELECT id_salle, nom, capacite FROM salle ORDER BY nom')->fetch_all(MYSQLI_ASSOC);
 $jeux = mysqli_query($conn, 'SELECT id_jeu, titre FROM jeux ORDER BY titre')->fetch_all(MYSQLI_ASSOC);
-$requete = mysqli_prepare(
+$requeteListeEvenements = mysqli_prepare(
     $conn,
     "SELECT e.id_evenement, e.titre, e.date_debut, e.date_fin, e.nombre_place,
             s.nom AS salle, j.titre AS jeu
@@ -114,10 +120,10 @@ $requete = mysqli_prepare(
      ORDER BY e.date_debut
 "
 );
-mysqli_stmt_bind_param($requete, 'i', $utilisateur['id']);
-mysqli_stmt_execute($requete);
-$evenements = mysqli_fetch_all(mysqli_stmt_get_result($requete), MYSQLI_ASSOC);
-mysqli_stmt_close($requete);
+mysqli_stmt_bind_param($requeteListeEvenements, 'i', $utilisateur['id']);
+mysqli_stmt_execute($requeteListeEvenements);
+$evenements = mysqli_fetch_all(mysqli_stmt_get_result($requeteListeEvenements), MYSQLI_ASSOC);
+mysqli_stmt_close($requeteListeEvenements);
 ?>
 <!doctype html>
 <html lang="fr">
@@ -130,7 +136,10 @@ mysqli_stmt_close($requete);
 <body>
 <header class="entete">
     <div class="contenu-entete">
-        <a class="logo" href="index.php"><img src="logo-hotel.png" alt=""><span>Les événements de l’hôtel<small>ESPACE ADMINISTRATEUR</small></span></a>
+        <a class="logo" href="index.php">
+            <img src="logo-hotel.png" alt="">
+            <span>Les événements de l’hôtel<small>ESPACE ADMINISTRATEUR</small></span>
+        </a>
         <nav class="navigation-compte">
             <a href="index.php">Planning public</a>
             <a href="deconnexion.php">Déconnexion</a>
@@ -173,7 +182,12 @@ mysqli_stmt_close($requete);
                     <select id="id_salle" name="id_salle" required>
                         <option value="">Choisir une salle</option>
                         <?php foreach ($salles as $salle): ?>
-                            <option value="<?= (int) $salle['id_salle'] ?>" data-capacite="<?= (int) $salle['capacite'] ?>"><?= h($salle['nom']) ?> (<?= (int) $salle['capacite'] ?> places)</option>
+                            <option
+                                value="<?= (int) $salle['id_salle'] ?>"
+                                data-capacite="<?= (int) $salle['capacite'] ?>"
+                            >
+                                <?= h($salle['nom']) ?> (<?= (int) $salle['capacite'] ?> places)
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -223,8 +237,9 @@ mysqli_stmt_close($requete);
     const choixSalle = document.querySelector("#id_salle");
     const champPlaces = document.querySelector("#nombre_place");
 
-    choixSalle.addEventListener("change", () => {
-        champPlaces.value = choixSalle.selectedOptions[0].dataset.capacite || "";
+    choixSalle.addEventListener("change", function () {
+        const salleChoisie = choixSalle.selectedOptions[0];
+        champPlaces.value = salleChoisie.dataset.capacite || "";
     });
 </script>
 </body>

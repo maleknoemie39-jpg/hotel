@@ -26,22 +26,22 @@ if ($formulaireEnvoye && !verifier_csrf()) {
     } else {
         // Enregistrer le mot de passe sous forme protégée, jamais en clair.
         $hachage = password_hash($motDePasse, PASSWORD_DEFAULT);
-        $requete = mysqli_prepare(
+        $requeteNouveauCompte = mysqli_prepare(
             $conn,
             'INSERT INTO utilisateur (nom, prenom, email, mot_de_passe)
              VALUES (?, ?, ?, ?)'
         );
-        mysqli_stmt_bind_param($requete, 'ssss', $nom, $prenom, $email, $hachage);
+        mysqli_stmt_bind_param($requeteNouveauCompte, 'ssss', $nom, $prenom, $email, $hachage);
 
         try {
-            mysqli_stmt_execute($requete);
-            $id = mysqli_insert_id($conn);
-            mysqli_stmt_close($requete);
+            mysqli_stmt_execute($requeteNouveauCompte);
+            $idUtilisateur = mysqli_insert_id($conn);
+            mysqli_stmt_close($requeteNouveauCompte);
 
             // Connecter automatiquement le nouveau client.
             session_regenerate_id(true);
             $_SESSION['utilisateur'] = [
-                'id' => $id,
+                'id' => $idUtilisateur,
                 'nom' => $nom,
                 'prenom' => $prenom,
                 'role' => 'CLIENT',
@@ -50,7 +50,7 @@ if ($formulaireEnvoye && !verifier_csrf()) {
             header('Location: index.php');
             exit;
         } catch (mysqli_sql_exception $exception) {
-            mysqli_stmt_close($requete);
+            mysqli_stmt_close($requeteNouveauCompte);
             if ((int) $exception->getCode() === 1062) {
                 // L'adresse e-mail est déjà utilisée.
                 $erreur = 'Cette adresse e-mail possède déjà un compte.';

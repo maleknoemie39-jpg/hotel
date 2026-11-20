@@ -4,9 +4,15 @@ declare(strict_types=1);
 require_once __DIR__ . '/commun.php';
 
 $utilisateur = exiger_role('CLIENT');
-$idEvenement = filter_input(INPUT_POST, 'id_evenement', FILTER_VALIDATE_INT);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $idEvenement === false || $idEvenement === null || $idEvenement < 1) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: index.php');
+    exit;
+}
+
+// Lire le numéro de l'événement envoyé par le formulaire.
+$idEvenement = filter_input(INPUT_POST, 'id_evenement', FILTER_VALIDATE_INT);
+if ($idEvenement === false || $idEvenement === null || $idEvenement < 1) {
     header('Location: index.php');
     exit;
 }
@@ -21,16 +27,16 @@ try {
     mysqli_begin_transaction($conn);
 
     // Verrouiller l'événement pendant la vérification des places.
-    $requete = mysqli_prepare(
+    $requeteEvenement = mysqli_prepare(
         $conn,
         "SELECT nombre_place FROM evenement
          WHERE id_evenement = ? AND statut = 'PUBLIE' AND date_debut >= CURDATE()
          FOR UPDATE"
     );
-    mysqli_stmt_bind_param($requete, 'i', $idEvenement);
-    mysqli_stmt_execute($requete);
-    $evenement = mysqli_fetch_assoc(mysqli_stmt_get_result($requete));
-    mysqli_stmt_close($requete);
+    mysqli_stmt_bind_param($requeteEvenement, 'i', $idEvenement);
+    mysqli_stmt_execute($requeteEvenement);
+    $evenement = mysqli_fetch_assoc(mysqli_stmt_get_result($requeteEvenement));
+    mysqli_stmt_close($requeteEvenement);
 
     if ($evenement === null) {
         mysqli_rollback($conn);
@@ -39,16 +45,16 @@ try {
     }
 
     // Vérifier que le client n'a pas déjà réservé cet événement.
-    $requete = mysqli_prepare(
+    $requeteInscription = mysqli_prepare(
         $conn,
         "SELECT COUNT(*) AS total
          FROM inscrire
          WHERE id_evenement = ? AND id_utilisateur = ? AND statut = 'CONFIRMEE'"
     );
-    mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $utilisateur['id']);
-    mysqli_stmt_execute($requete);
-    $dejaInscrit = (int) mysqli_fetch_assoc(mysqli_stmt_get_result($requete))['total'] > 0;
-    mysqli_stmt_close($requete);
+    mysqli_stmt_bind_param($requeteInscription, 'ii', $idEvenement, $utilisateur['id']);
+    mysqli_stmt_execute($requeteInscription);
+    $dejaInscrit = (int) mysqli_fetch_assoc(mysqli_stmt_get_result($requeteInscription))['total'] > 0;
+    mysqli_stmt_close($requeteInscription);
 
     if ($dejaInscrit) {
         mysqli_rollback($conn);
@@ -57,16 +63,16 @@ try {
     }
 
     // Compter les réservations confirmées avant d'en ajouter une nouvelle.
-    $requete = mysqli_prepare(
+    $requetePlaces = mysqli_prepare(
         $conn,
         "SELECT COUNT(*) AS total
          FROM inscrire
          WHERE id_evenement = ? AND statut = 'CONFIRMEE'"
     );
-    mysqli_stmt_bind_param($requete, 'i', $idEvenement);
-    mysqli_stmt_execute($requete);
-    $placesPrises = (int) mysqli_fetch_assoc(mysqli_stmt_get_result($requete))['total'];
-    mysqli_stmt_close($requete);
+    mysqli_stmt_bind_param($requetePlaces, 'i', $idEvenement);
+    mysqli_stmt_execute($requetePlaces);
+    $placesPrises = (int) mysqli_fetch_assoc(mysqli_stmt_get_result($requetePlaces))['total'];
+    mysqli_stmt_close($requetePlaces);
 
     if ($placesPrises >= (int) $evenement['nombre_place']) {
         mysqli_rollback($conn);
@@ -75,7 +81,7 @@ try {
     }
 
     // Enregistrer la réservation et la relier au client et à l'événement.
-    $requete = mysqli_prepare(
+    $requeteReservation = mysqli_prepare(
         $conn,
         "INSERT INTO inscrire
          (id_utilisateur, id_evenement, date_inscription, statut, place_attribue)
@@ -85,9 +91,9 @@ try {
             statut = VALUES(statut),
             place_attribue = VALUES(place_attribue)"
     );
-    mysqli_stmt_bind_param($requete, 'ii', $utilisateur['id'], $idEvenement);
-    mysqli_stmt_execute($requete);
-    mysqli_stmt_close($requete);
+    mysqli_stmt_bind_param($requeteReservation, 'ii', $utilisateur['id'], $idEvenement);
+    mysqli_stmt_execute($requeteReservation);
+    mysqli_stmt_close($requeteReservation);
 
     mysqli_commit($conn);
     header('Location: index.php?message=inscrit');
