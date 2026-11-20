@@ -20,6 +20,30 @@ body {
   margin: 0 auto;
 }
 
+.contenu-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.navigation-compte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.navigation-compte a {
+  color: #fff;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.navigation-compte a:hover {
+  text-decoration: underline;
+}
+
 .logo {
   display: flex;
   align-items: center;
@@ -30,9 +54,9 @@ body {
 }
 
 .logo img {
-  width: 48px;
-  height: 48px;
-  border-radius: 5px;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
   object-fit: cover;
   object-position: center;
 }
@@ -199,7 +223,7 @@ body {
 
 .carte-evenement {
   display: grid;
-  grid-template-columns: 75px 1fr 90px;
+  grid-template-columns: 75px minmax(0, 1fr) 120px;
   align-items: center;
   gap: 14px;
   padding: 14px;
@@ -290,6 +314,154 @@ body {
   font-size: 10px;
 }
 
+.bouton,
+.bouton-reserver {
+  display: inline-block;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: #477a70;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.bouton:hover,
+.bouton-reserver:hover {
+  background: #315d55;
+}
+
+.bouton-secondaire {
+  background: #6d7783;
+}
+
+.bouton-reserver {
+  margin-top: 7px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+
+.places-disponibles a {
+  display: block;
+  margin-top: 7px;
+  color: #315d55;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.places-disponibles form {
+  margin: 0;
+}
+
+.message-info,
+.message-erreur {
+  padding: 12px 14px;
+  border-radius: 7px;
+}
+
+.message-info {
+  background: #e8f1ee;
+  color: #315d55;
+}
+
+.message-erreur {
+  background: #fff0ef;
+  color: #9c3028;
+}
+
+.compte-page h1 {
+  margin-top: 0;
+}
+
+.formulaires-compte {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.formulaire-connexion-conteneur {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.formulaire-connexion {
+  width: min(100%, 440px);
+  justify-self: center;
+}
+
+.formulaire {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.formulaire h2 {
+  margin: 0 0 8px;
+  font-size: 19px;
+}
+
+.formulaire label {
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.formulaire input,
+.formulaire textarea,
+.formulaire select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid #cbd4d2;
+  border-radius: 6px;
+  background: #fff;
+  color: #202a36;
+  font: inherit;
+}
+
+.formulaire textarea {
+  resize: vertical;
+}
+
+.formulaire .bouton {
+  justify-self: start;
+  margin-top: 10px;
+}
+
+.formulaire-evenement {
+  max-width: 720px;
+  margin-top: 24px;
+}
+
+.formulaire-inscription {
+  max-width: 560px;
+  margin: 20px auto 0;
+}
+
+.lien-formulaire {
+  margin: 22px 0 0;
+  text-align: center;
+}
+
+.lien-formulaire a {
+  color: #315d55;
+  font-weight: 700;
+}
+
+.champs-cotes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.champs-cotes > div {
+  display: grid;
+  gap: 8px;
+}
+
 .aucun-evenement {
   padding: 28px;
   border: 1px dashed #cbd4d2;
@@ -311,6 +483,15 @@ a:focus-visible {
 @media (max-width: 760px) {
   .page-principale {
     width: calc(100% - 28px);
+  }
+
+  .contenu-entete {
+    align-items: flex-start;
+  }
+
+  .navigation-compte {
+    justify-content: flex-end;
+    gap: 8px 12px;
     margin-top: 24px;
   }
 
@@ -329,9 +510,27 @@ a:focus-visible {
 }
 
 @media (max-width: 520px) {
+  .entete {
+    padding: 15px 0;
+  }
+
+  .contenu-entete {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .navigation-compte {
+    justify-content: flex-start;
+  }
+
+  .formulaires-compte,
+  .champs-cotes {
+    grid-template-columns: 1fr;
+  }
+
   .logo img {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
   }
 
   .page-principale {

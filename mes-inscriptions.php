@@ -1,0 +1,98 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/commun.php';
+
+$utilisateur = exiger_role('CLIENT');
+$message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $idInscription = filter_input(INPUT_POST, 'id_inscription', FILTER_VALIDATE_INT);
+
+    if (!verifier_csrf() || $idInscription === false || $idInscription === null || $idInscription < 1) {
+        $message = 'La demande n’a pas pu être vérifiée. Rechargez la page.';
+    } else {
+        $requete = mysqli_prepare(
+            $conn,
+            "UPDATE inscription i
+             JOIN inscrire u ON u.id_inscription = i.id_inscription
+             SET i.statut = 'ANNULEE'
+             WHERE i.id_inscription = ? AND u.id_utilisateur = ? AND i.statut = 'CONFIRMEE'"
+        );
+        mysqli_stmt_bind_param($requete, 'ii', $idInscription, $utilisateur['id']);
+        mysqli_stmt_execute($requete);
+        $annulationEffectuee = mysqli_stmt_affected_rows($requete) > 0;
+        mysqli_stmt_close($requete);
+        $message = $annulationEffectuee
+            ? 'Votre place a été libérée.'
+            : 'Cette inscription est déjà annulée ou introuvable.';
+    }
+}
+
+$requete = mysqli_prepare(
+    $conn,
+    "SELECT i.id_inscription, i.statut, e.titre, e.date_debut, e.date_fin, s.nom AS salle
+     FROM inscrire u
+     JOIN inscription i ON i.id_inscription = u.id_inscription
+     JOIN concerne c ON c.id_inscription = i.id_inscription
+     JOIN evenement e ON e.id_evenement = c.id_evenement
+     LEFT JOIN derouler d ON d.id_evenement = e.id_evenement
+     LEFT JOIN salle s ON s.id_salle = d.id_salle
+     WHERE u.id_utilisateur = ?
+     ORDER BY e.date_debut DESC"
+);
+mysqli_stmt_bind_param($requete, 'i', $utilisateur['id']);
+mysqli_stmt_execute($requete);
+$inscriptions = mysqli_fetch_all(mysqli_stmt_get_result($requete), MYSQLI_ASSOC);
+mysqli_stmt_close($requete);
+?>
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mes inscriptions — Hôtel Pixel</title>
+    <link rel="stylesheet" href="style.css?v=<?= filemtime(__DIR__ . '/style.css') ?>">
+</head>
+<body>
+<header class="entete">
+    <div class="contenu-entete">
+        <a class="logo" href="index.php"><img src="logo-hotel.png" alt=""><span>Les événements de l’hôtel<small>LE PROGRAMME DE L’HÔTEL</small></span></a>
+        <nav class="navigation-compte">
+            <a href="index.php">Planning public</a>
+            <a href="deconnexion.php">Déconnexion</a>
+        </nav>
+    </div>
+</header>
+<main class="page-principale">
+    <section class="planning compte-page">
+        <p class="petit-titre">Bonjour <?= h($utilisateur['prenom']) ?></p>
+        <h1>Mes inscriptions</h1>
+        <?php if ($message !== ''): ?><p class="message-info" role="status"><?= h($message) ?></p><?php endif; ?>
+        <?php if ($inscriptions === []): ?>
+            <div class="aucun-evenement"><strong>Vous n’êtes inscrit à aucun événement.</strong><p>Consultez le planning et réservez votre place.</p></div>
+        <?php else: ?>
+            <div class="liste-evenements">
+                <?php foreach ($inscriptions as $inscription): ?>
+                    <article class="carte-evenement">
+                        <div class="details-evenement">
+                            <span class="etiquette"><?= h($inscription['statut']) ?></span>
+                            <h2><?= h($inscription['titre']) ?></h2>
+                            <p><?= h(date('d/m/Y à H\hi', strtotime($inscription['date_debut']))) ?>
+                                · Salle : <?= h($inscription['salle'] ?? 'À préciser') ?></p>
+                        </div>
+                        <?php if ($inscription['statut'] === 'CONFIRMEE'): ?>
+                            <form method="post">
+                                <input type="hidden" name="jeton_csrf" value="<?= h(jeton_csrf()) ?>">
+                                <input type="hidden" name="id_inscription" value="<?= (int) $inscription['id_inscription'] ?>">
+                                <button class="bouton bouton-secondaire" type="submit">Annuler ma place</button>
+                            </form>
+                        <?php endif; ?>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </section>
+</main>
+</body>
+</html>
