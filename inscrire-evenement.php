@@ -16,9 +16,11 @@ if (!verifier_csrf()) {
     exit;
 }
 
+// La transaction évite que deux réservations prennent la dernière place en même temps.
 try {
     mysqli_begin_transaction($conn);
 
+    // Verrouiller l'événement pendant la vérification des places.
     $requete = mysqli_prepare(
         $conn,
         "SELECT nombre_place FROM evenement
@@ -36,13 +38,12 @@ try {
         exit;
     }
 
+    // Vérifier que le client n'a pas déjà réservé cet événement.
     $requete = mysqli_prepare(
         $conn,
         "SELECT COUNT(*) AS total
-         FROM concerne c
-         JOIN inscription i ON i.id_inscription = c.id_inscription
-         JOIN inscrire u ON u.id_inscription = i.id_inscription
-         WHERE c.id_evenement = ? AND u.id_utilisateur = ? AND i.statut = 'CONFIRMEE'"
+         FROM inscrire
+         WHERE id_evenement = ? AND id_utilisateur = ? AND statut = 'CONFIRMEE'"
     );
     mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $utilisateur['id']);
     mysqli_stmt_execute($requete);
@@ -55,12 +56,12 @@ try {
         exit;
     }
 
+    // Compter les réservations confirmées avant d'en ajouter une nouvelle.
     $requete = mysqli_prepare(
         $conn,
         "SELECT COUNT(*) AS total
-         FROM concerne c
-         JOIN inscription i ON i.id_inscription = c.id_inscription
-         WHERE c.id_evenement = ? AND i.statut = 'CONFIRMEE'"
+         FROM inscrire
+         WHERE id_evenement = ? AND statut = 'CONFIRMEE'"
     );
     mysqli_stmt_bind_param($requete, 'i', $idEvenement);
     mysqli_stmt_execute($requete);
@@ -73,22 +74,18 @@ try {
         exit;
     }
 
+    // Enregistrer la réservation et la relier au client et à l'événement.
     $requete = mysqli_prepare(
         $conn,
-        "INSERT INTO inscription (date_inscription, statut, place_attribue)
-         VALUES (NOW(), 'CONFIRMEE', '1')"
+        "INSERT INTO inscrire
+         (id_utilisateur, id_evenement, date_inscription, statut, place_attribue)
+         VALUES (?, ?, NOW(), 'CONFIRMEE', '1')
+         ON DUPLICATE KEY UPDATE
+            date_inscription = VALUES(date_inscription),
+            statut = VALUES(statut),
+            place_attribue = VALUES(place_attribue)"
     );
-    mysqli_stmt_execute($requete);
-    $idInscription = mysqli_insert_id($conn);
-    mysqli_stmt_close($requete);
-
-    $requete = mysqli_prepare($conn, 'INSERT INTO inscrire (id_utilisateur, id_inscription) VALUES (?, ?)');
-    mysqli_stmt_bind_param($requete, 'ii', $utilisateur['id'], $idInscription);
-    mysqli_stmt_execute($requete);
-    mysqli_stmt_close($requete);
-
-    $requete = mysqli_prepare($conn, 'INSERT INTO concerne (id_inscription, id_evenement) VALUES (?, ?)');
-    mysqli_stmt_bind_param($requete, 'ii', $idInscription, $idEvenement);
+    mysqli_stmt_bind_param($requete, 'ii', $utilisateur['id'], $idEvenement);
     mysqli_stmt_execute($requete);
     mysqli_stmt_close($requete);
 

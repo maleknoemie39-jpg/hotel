@@ -7,19 +7,19 @@ $utilisateur = exiger_role('CLIENT');
 $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $idInscription = filter_input(INPUT_POST, 'id_inscription', FILTER_VALIDATE_INT);
+    $idEvenement = filter_input(INPUT_POST, 'id_evenement', FILTER_VALIDATE_INT);
 
-    if (!verifier_csrf() || $idInscription === false || $idInscription === null || $idInscription < 1) {
+    // Annuler uniquement une réservation qui appartient au client connecté.
+    if (!verifier_csrf() || $idEvenement === false || $idEvenement === null || $idEvenement < 1) {
         $message = 'La demande n’a pas pu être vérifiée. Rechargez la page.';
     } else {
         $requete = mysqli_prepare(
             $conn,
-            "UPDATE inscription i
-             JOIN inscrire u ON u.id_inscription = i.id_inscription
-             SET i.statut = 'ANNULEE'
-             WHERE i.id_inscription = ? AND u.id_utilisateur = ? AND i.statut = 'CONFIRMEE'"
+            "UPDATE inscrire
+             SET statut = 'ANNULEE'
+             WHERE id_evenement = ? AND id_utilisateur = ? AND statut = 'CONFIRMEE'"
         );
-        mysqli_stmt_bind_param($requete, 'ii', $idInscription, $utilisateur['id']);
+        mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $utilisateur['id']);
         mysqli_stmt_execute($requete);
         $annulationEffectuee = mysqli_stmt_affected_rows($requete) > 0;
         mysqli_stmt_close($requete);
@@ -29,16 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Afficher les réservations du client connecté.
 $requete = mysqli_prepare(
     $conn,
-    "SELECT i.id_inscription, i.statut, e.titre, e.date_debut, e.date_fin, s.nom AS salle
-     FROM inscrire u
-     JOIN inscription i ON i.id_inscription = u.id_inscription
-     JOIN concerne c ON c.id_inscription = i.id_inscription
-     JOIN evenement e ON e.id_evenement = c.id_evenement
+    "SELECT i.id_evenement, i.statut, e.titre, e.date_debut, e.date_fin, s.nom AS salle
+     FROM inscrire i
+     JOIN evenement e ON e.id_evenement = i.id_evenement
      LEFT JOIN derouler d ON d.id_evenement = e.id_evenement
      LEFT JOIN salle s ON s.id_salle = d.id_salle
-     WHERE u.id_utilisateur = ?
+     WHERE i.id_utilisateur = ?
      ORDER BY e.date_debut DESC"
 );
 mysqli_stmt_bind_param($requete, 'i', $utilisateur['id']);
@@ -68,7 +67,9 @@ mysqli_stmt_close($requete);
     <section class="planning compte-page">
         <p class="petit-titre">Bonjour <?= h($utilisateur['prenom']) ?></p>
         <h1>Mes inscriptions</h1>
-        <?php if ($message !== ''): ?><p class="message-info" role="status"><?= h($message) ?></p><?php endif; ?>
+        <?php if ($message !== ''): ?>
+            <p class="message-info" role="status"><?= h($message) ?></p>
+        <?php endif; ?>
         <?php if ($inscriptions === []): ?>
             <div class="aucun-evenement"><strong>Vous n’êtes inscrit à aucun événement.</strong><p>Consultez le planning et réservez votre place.</p></div>
         <?php else: ?>
@@ -78,13 +79,15 @@ mysqli_stmt_close($requete);
                         <div class="details-evenement">
                             <span class="etiquette"><?= h($inscription['statut']) ?></span>
                             <h2><?= h($inscription['titre']) ?></h2>
-                            <p><?= h(date('d/m/Y à H\hi', strtotime($inscription['date_debut']))) ?>
-                                · Salle : <?= h($inscription['salle'] ?? 'À préciser') ?></p>
+                            <p>
+                                <?= h(date('d/m/Y à H\hi', strtotime($inscription['date_debut']))) ?>
+                                · Salle : <?= h($inscription['salle'] ?? 'À préciser') ?>
+                            </p>
                         </div>
                         <?php if ($inscription['statut'] === 'CONFIRMEE'): ?>
                             <form method="post">
                                 <input type="hidden" name="jeton_csrf" value="<?= h(jeton_csrf()) ?>">
-                                <input type="hidden" name="id_inscription" value="<?= (int) $inscription['id_inscription'] ?>">
+                                <input type="hidden" name="id_evenement" value="<?= (int) $inscription['id_evenement'] ?>">
                                 <button class="bouton bouton-secondaire" type="submit">Annuler ma place</button>
                             </form>
                         <?php endif; ?>

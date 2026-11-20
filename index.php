@@ -8,15 +8,15 @@ $idUtilisateur = $utilisateur === null ? 0 : (int) $utilisateur['id'];
 $dateDebut = new DateTimeImmutable('today');
 $dateFin = $dateDebut->modify('+7 days');
 
+// Charger les événements publiés de la semaine et compter les places réservées.
 $sql = "SELECT e.id_evenement, e.titre, e.description, e.type_evenement,
                e.date_debut, e.date_fin, e.nombre_place,
                GROUP_CONCAT(DISTINCT j.titre ORDER BY j.titre SEPARATOR ', ') AS jeux,
                GROUP_CONCAT(DISTINCT s.nom ORDER BY s.nom SEPARATOR ', ') AS salles,
-               (SELECT COUNT(*) FROM concerne c JOIN inscription i ON i.id_inscription = c.id_inscription
-                WHERE c.id_evenement = e.id_evenement AND i.statut = 'CONFIRMEE') AS places_prises,
-               (SELECT COUNT(*) FROM concerne c JOIN inscription i ON i.id_inscription = c.id_inscription
-                JOIN inscrire u ON u.id_inscription = i.id_inscription
-                WHERE c.id_evenement = e.id_evenement AND u.id_utilisateur = ? AND i.statut = 'CONFIRMEE') AS inscrit
+               (SELECT COUNT(*) FROM inscrire i
+                WHERE i.id_evenement = e.id_evenement AND i.statut = 'CONFIRMEE') AS places_prises,
+               (SELECT COUNT(*) FROM inscrire i
+                WHERE i.id_evenement = e.id_evenement AND i.id_utilisateur = ? AND i.statut = 'CONFIRMEE') AS inscrit
         FROM evenement e
         LEFT JOIN lier l ON l.id_evenement = e.id_evenement
         LEFT JOIN jeux j ON j.id_jeu = l.id_jeu
@@ -34,9 +34,11 @@ mysqli_stmt_execute($requete);
 $evenementsBruts = mysqli_fetch_all(mysqli_stmt_get_result($requete), MYSQLI_ASSOC);
 mysqli_stmt_close($requete);
 
-$evenements = array_map(static function (array $evenement): array {
+// Préparer les informations que le planning JavaScript va afficher.
+$evenements = [];
+foreach ($evenementsBruts as $evenement) {
     $capacite = (int) $evenement['nombre_place'];
-    return [
+    $evenements[] = [
         'id' => (int) $evenement['id_evenement'],
         'titre' => $evenement['titre'],
         'description' => $evenement['description'],
@@ -49,8 +51,9 @@ $evenements = array_map(static function (array $evenement): array {
         'salle' => $evenement['salles'] ?? '',
         'jeux' => $evenement['jeux'] ?? '',
     ];
-}, $evenementsBruts);
+}
 
+// Choisir un message simple à afficher après une réservation.
 $messages = [
     'inscrit' => 'Votre place est réservée. Retrouvez-la dans Mes inscriptions.',
     'deja-inscrit' => 'Vous êtes déjà inscrit à cet événement.',
@@ -79,18 +82,21 @@ $jetonCsrf = jeton_csrf();
             <img src="logo-hotel.png" alt="">
             <span>Les événements de l’hôtel<small>LE PROGRAMME DE L’HÔTEL</small></span>
         </a>
-        <nav class="navigation-compte" aria-label="Compte">
-            <?php if ($utilisateur === null): ?>
-                <a href="login.php">Connexion</a>
+        <?php if ($utilisateur === null): ?>
+            <nav class="navigation-compte" aria-label="Compte">
+                <a href="connexion.php">Connexion</a>
                 <a href="inscrire.php">Inscription</a>
-            <?php elseif ($utilisateur['role'] === 'ADMIN'): ?>
-                <a href="admin.php">Gestion des événements</a>
+            </nav>
+        <?php else: ?>
+            <nav class="navigation-compte" aria-label="Compte">
+                <?php if ($utilisateur['role'] === 'ADMIN'): ?>
+                    <a href="admin.php">Gestion des événements</a>
+                <?php else: ?>
+                    <a href="mes-inscriptions.php">Mes inscriptions</a>
+                <?php endif; ?>
                 <a href="deconnexion.php">Déconnexion</a>
-            <?php else: ?>
-                <a href="mes-inscriptions.php">Mes inscriptions</a>
-                <a href="deconnexion.php">Déconnexion</a>
-            <?php endif; ?>
-        </nav>
+            </nav>
+        <?php endif; ?>
     </div>
 </header>
 

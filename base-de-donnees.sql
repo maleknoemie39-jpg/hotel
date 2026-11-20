@@ -4,17 +4,14 @@ CREATE TABLE Utilisateur(
    prenom VARCHAR(50) NOT NULL,
    email VARCHAR(120) NOT NULL,
    mot_de_passe VARCHAR(255) NOT NULL,
-   role_utilisateur VARCHAR(20) NOT NULL DEFAULT 'CLIENT',
    PRIMARY KEY(id_utilisateur),
    UNIQUE KEY email_utilisateur (email)
 );
 
-CREATE TABLE Inscription(
-   id_inscription INT NOT NULL AUTO_INCREMENT,
-   date_inscription DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-   statut VARCHAR(20) NOT NULL DEFAULT 'CONFIRMEE',
-   place_attribue VARCHAR(20) NOT NULL DEFAULT '1',
-   PRIMARY KEY(id_inscription)
+CREATE TABLE admin(
+   id_utilisateur INT NOT NULL,
+   PRIMARY KEY(id_utilisateur),
+   FOREIGN KEY(id_utilisateur) REFERENCES Utilisateur(id_utilisateur)
 );
 
 CREATE TABLE evenement(
@@ -49,18 +46,21 @@ CREATE TABLE salle(
 );
 
 CREATE TABLE inscrire(
-   id_utilisateur INT,
-   id_inscription INT,
-   PRIMARY KEY(id_utilisateur, id_inscription),
+   id_utilisateur INT NOT NULL,
+   id_evenement INT NOT NULL,
+   date_inscription DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   statut VARCHAR(20) NOT NULL DEFAULT 'CONFIRMEE',
+   place_attribue VARCHAR(20) NOT NULL DEFAULT '1',
+   PRIMARY KEY(id_utilisateur, id_evenement),
    FOREIGN KEY(id_utilisateur) REFERENCES Utilisateur(id_utilisateur),
-   FOREIGN KEY(id_inscription) REFERENCES Inscription(id_inscription)
+   FOREIGN KEY(id_evenement) REFERENCES evenement(id_evenement)
 );
 
-CREATE TABLE concerne(
-   id_inscription INT,
-   id_evenement INT,
-   PRIMARY KEY(id_inscription, id_evenement),
-   FOREIGN KEY(id_inscription) REFERENCES Inscription(id_inscription),
+CREATE TABLE gerer(
+   id_utilisateur INT NOT NULL,
+   id_evenement INT NOT NULL,
+   PRIMARY KEY(id_utilisateur, id_evenement),
+   FOREIGN KEY(id_utilisateur) REFERENCES admin(id_utilisateur),
    FOREIGN KEY(id_evenement) REFERENCES evenement(id_evenement)
 );
 
@@ -129,6 +129,13 @@ ON DUPLICATE KEY UPDATE
   date_fin = VALUES(date_fin),
   nombre_place = VALUES(nombre_place),
   statut = VALUES(statut);
+
+INSERT INTO gerer (id_utilisateur, id_evenement)
+SELECT a.id_utilisateur, e.id_evenement
+FROM admin a
+CROSS JOIN evenement e
+WHERE e.id_evenement BETWEEN 1 AND 21
+ON DUPLICATE KEY UPDATE id_evenement = VALUES(id_evenement);
 
 DELETE FROM derouler WHERE id_evenement BETWEEN 1 AND 21;
 INSERT INTO derouler (id_evenement, id_salle)

@@ -4,102 +4,120 @@ declare(strict_types=1);
 require_once __DIR__ . '/commun.php';
 $utilisateur = exiger_role('ADMIN');
 $erreur = '';
+$estEnvoi = $_SERVER['REQUEST_METHOD'] === 'POST';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!verifier_csrf()) {
-        $erreur = 'La page a expiré. Rechargez-la puis réessayez.';
-    } else {
-        $titre = trim((string) ($_POST['titre'] ?? ''));
-        $type = trim((string) ($_POST['type'] ?? ''));
-        $description = trim((string) ($_POST['description'] ?? ''));
-        $debutSaisi = (string) ($_POST['date_debut'] ?? '');
-        $finSaisie = (string) ($_POST['date_fin'] ?? '');
-        $idSalle = filter_input(INPUT_POST, 'id_salle', FILTER_VALIDATE_INT);
-        $idJeu = filter_input(INPUT_POST, 'id_jeu', FILTER_VALIDATE_INT);
-        $debut = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $debutSaisi);
-        $fin = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $finSaisie);
+// Vérifier que le formulaire a bien été envoyé depuis le site.
+if ($estEnvoi && !verifier_csrf()) {
+    $erreur = 'La page a expiré. Rechargez-la puis réessayez.';
+}
 
-        if ($titre === '' || strlen($titre) > 100 || $type === '' || strlen($type) > 50 || $description === '') {
-            $erreur = 'Renseignez le titre, le type et la description de l’événement.';
-        } elseif (!$debut || $debut->format('Y-m-d\TH:i') !== $debutSaisi || !$fin || $fin->format('Y-m-d\TH:i') !== $finSaisie) {
-            $erreur = 'Les dates et heures indiquées ne sont pas valides.';
-        } elseif ($fin <= $debut || $debut < new DateTimeImmutable('now')) {
-            $erreur = 'La fin doit être après le début et l’événement ne peut pas être dans le passé.';
-        } elseif (
-            $idSalle === false || $idSalle === null
-            || $idJeu === false || $idJeu === null
-        ) {
-            $erreur = 'Choisissez une salle et un jeu valides.';
-        } else {
-            $requete = mysqli_prepare($conn, 'SELECT capacite FROM salle WHERE id_salle = ?');
-            mysqli_stmt_bind_param($requete, 'i', $idSalle);
-            mysqli_stmt_execute($requete);
-            $salle = mysqli_fetch_assoc(mysqli_stmt_get_result($requete));
-            mysqli_stmt_close($requete);
+// Lire et vérifier les informations saisies dans le formulaire.
+if ($estEnvoi && $erreur === '') {
+    $titre = trim((string) ($_POST['titre'] ?? ''));
+    $type = trim((string) ($_POST['type'] ?? ''));
+    $description = trim((string) ($_POST['description'] ?? ''));
+    $debutSaisi = (string) ($_POST['date_debut'] ?? '');
+    $finSaisie = (string) ($_POST['date_fin'] ?? '');
+    $idSalle = filter_input(INPUT_POST, 'id_salle', FILTER_VALIDATE_INT);
+    $idJeu = filter_input(INPUT_POST, 'id_jeu', FILTER_VALIDATE_INT);
+    $debut = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $debutSaisi);
+    $fin = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $finSaisie);
 
-            $requete = mysqli_prepare($conn, 'SELECT id_jeu FROM jeux WHERE id_jeu = ?');
-            mysqli_stmt_bind_param($requete, 'i', $idJeu);
-            mysqli_stmt_execute($requete);
-            $jeuExiste = mysqli_fetch_assoc(mysqli_stmt_get_result($requete)) !== null;
-            mysqli_stmt_close($requete);
-
-            if ($salle === null || !$jeuExiste || (int) $salle['capacite'] < 1) {
-                $erreur = 'Le jeu ou la salle sélectionné est invalide.';
-            } else {
-                $places = (int) $salle['capacite'];
-                try {
-                    mysqli_begin_transaction($conn);
-                    $dateDebutSql = $debut->format('Y-m-d H:i:s');
-                    $dateFinSql = $fin->format('Y-m-d H:i:s');
-                    $requete = mysqli_prepare(
-                        $conn,
-                        "INSERT INTO evenement
-                         (titre, type_evenement, description, date_debut, date_fin, nombre_place, statut, date_creation)
-                         VALUES (?, ?, ?, ?, ?, ?, 'PUBLIE', NOW())"
-                    );
-                    mysqli_stmt_bind_param($requete, 'sssssi', $titre, $type, $description, $dateDebutSql, $dateFinSql, $places);
-                    mysqli_stmt_execute($requete);
-                    $idEvenement = mysqli_insert_id($conn);
-                    mysqli_stmt_close($requete);
-
-                    $requete = mysqli_prepare($conn, 'INSERT INTO derouler (id_evenement, id_salle) VALUES (?, ?)');
-                    mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $idSalle);
-                    mysqli_stmt_execute($requete);
-                    mysqli_stmt_close($requete);
-
-                    $requete = mysqli_prepare($conn, 'INSERT INTO lier (id_evenement, id_jeu) VALUES (?, ?)');
-                    mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $idJeu);
-                    mysqli_stmt_execute($requete);
-                    mysqli_stmt_close($requete);
-
-                    mysqli_commit($conn);
-                    header('Location: admin.php?cree=oui');
-                    exit;
-                } catch (mysqli_sql_exception $exception) {
-                    mysqli_rollback($conn);
-                    error_log($exception->getMessage());
-                    $erreur = 'L’événement n’a pas pu être enregistré. Vérifiez la base de données puis réessayez.';
-                }
-            }
-        }
+    if ($titre === '' || strlen($titre) > 100 || $type === '' || strlen($type) > 50 || $description === '') {
+        $erreur = 'Renseignez le titre, le type et la description de l’événement.';
+    } elseif (!$debut || $debut->format('Y-m-d\TH:i') !== $debutSaisi || !$fin || $fin->format('Y-m-d\TH:i') !== $finSaisie) {
+        $erreur = 'Les dates et heures indiquées ne sont pas valides.';
+    } elseif ($fin <= $debut || $debut < new DateTimeImmutable('now')) {
+        $erreur = 'La fin doit être après le début et l’événement ne peut pas être dans le passé.';
+    } elseif ($idSalle === false || $idSalle === null || $idJeu === false || $idJeu === null) {
+        $erreur = 'Choisissez une salle et un jeu valides.';
     }
 }
 
+// Vérifier que la salle et le jeu choisis existent.
+if ($estEnvoi && $erreur === '') {
+    $requete = mysqli_prepare(
+        $conn,
+        'SELECT s.capacite
+         FROM salle s JOIN jeux j ON j.id_jeu = ?
+         WHERE s.id_salle = ?'
+    );
+    mysqli_stmt_bind_param($requete, 'ii', $idJeu, $idSalle);
+    mysqli_stmt_execute($requete);
+    $salle = mysqli_fetch_assoc(mysqli_stmt_get_result($requete));
+    mysqli_stmt_close($requete);
+
+    if ($salle === null || (int) $salle['capacite'] < 1) {
+        $erreur = 'Le jeu ou la salle sélectionné est invalide.';
+    }
+}
+
+// Enregistrer l'événement et ses liens vers la salle et le jeu.
+if ($estEnvoi && $erreur === '') {
+    $places = (int) $salle['capacite'];
+    $dateDebutSql = $debut->format('Y-m-d H:i:s');
+    $dateFinSql = $fin->format('Y-m-d H:i:s');
+
+    try {
+        mysqli_begin_transaction($conn);
+
+        $requete = mysqli_prepare(
+            $conn,
+            "INSERT INTO evenement
+             (titre, type_evenement, description, date_debut, date_fin, nombre_place, statut, date_creation)
+             VALUES (?, ?, ?, ?, ?, ?, 'PUBLIE', NOW())"
+        );
+        mysqli_stmt_bind_param($requete, 'sssssi', $titre, $type, $description, $dateDebutSql, $dateFinSql, $places);
+        mysqli_stmt_execute($requete);
+        $idEvenement = mysqli_insert_id($conn);
+        mysqli_stmt_close($requete);
+
+        $requete = mysqli_prepare($conn, 'INSERT INTO gerer (id_utilisateur, id_evenement) VALUES (?, ?)');
+        mysqli_stmt_bind_param($requete, 'ii', $utilisateur['id'], $idEvenement);
+        mysqli_stmt_execute($requete);
+        mysqli_stmt_close($requete);
+
+        $requete = mysqli_prepare($conn, 'INSERT INTO derouler (id_evenement, id_salle) VALUES (?, ?)');
+        mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $idSalle);
+        mysqli_stmt_execute($requete);
+        mysqli_stmt_close($requete);
+
+        $requete = mysqli_prepare($conn, 'INSERT INTO lier (id_evenement, id_jeu) VALUES (?, ?)');
+        mysqli_stmt_bind_param($requete, 'ii', $idEvenement, $idJeu);
+        mysqli_stmt_execute($requete);
+        mysqli_stmt_close($requete);
+
+        mysqli_commit($conn);
+        header('Location: admin.php?cree=oui');
+        exit;
+    } catch (mysqli_sql_exception $exception) {
+        mysqli_rollback($conn);
+        error_log($exception->getMessage());
+        $erreur = 'L’événement n’a pas pu être enregistré. Vérifiez la base de données puis réessayez.';
+    }
+}
+
+// Charger les choix du formulaire et les événements à venir.
 $salles = mysqli_query($conn, 'SELECT id_salle, nom, capacite FROM salle ORDER BY nom')->fetch_all(MYSQLI_ASSOC);
 $jeux = mysqli_query($conn, 'SELECT id_jeu, titre FROM jeux ORDER BY titre')->fetch_all(MYSQLI_ASSOC);
-$evenements = mysqli_query(
+$requete = mysqli_prepare(
     $conn,
     "SELECT e.id_evenement, e.titre, e.date_debut, e.date_fin, e.nombre_place,
             s.nom AS salle, j.titre AS jeu
      FROM evenement e
+     JOIN gerer g ON g.id_evenement = e.id_evenement
      LEFT JOIN derouler d ON d.id_evenement = e.id_evenement
      LEFT JOIN salle s ON s.id_salle = d.id_salle
      LEFT JOIN lier l ON l.id_evenement = e.id_evenement
      LEFT JOIN jeux j ON j.id_jeu = l.id_jeu
-     WHERE e.date_debut >= CURDATE()
+     WHERE g.id_utilisateur = ? AND e.date_debut >= CURDATE()
      ORDER BY e.date_debut
 "
-)->fetch_all(MYSQLI_ASSOC);
+);
+mysqli_stmt_bind_param($requete, 'i', $utilisateur['id']);
+mysqli_stmt_execute($requete);
+$evenements = mysqli_fetch_all(mysqli_stmt_get_result($requete), MYSQLI_ASSOC);
+mysqli_stmt_close($requete);
 ?>
 <!doctype html>
 <html lang="fr">
@@ -123,8 +141,12 @@ $evenements = mysqli_query(
     <section class="planning compte-page">
         <p class="petit-titre">Bonjour <?= h($utilisateur['prenom']) ?></p>
         <h1>Gestion des événements</h1>
-        <?php if ($erreur !== ''): ?><p class="message-erreur" role="alert"><?= h($erreur) ?></p><?php endif; ?>
-        <?php if (($_GET['cree'] ?? '') === 'oui'): ?><p class="message-info" role="status">L’événement a été publié dans le planning.</p><?php endif; ?>
+        <?php if ($erreur !== ''): ?>
+            <p class="message-erreur" role="alert"><?= h($erreur) ?></p>
+        <?php endif; ?>
+        <?php if (($_GET['cree'] ?? '') === 'oui'): ?>
+            <p class="message-info" role="status">L’événement a été publié dans le planning.</p>
+        <?php endif; ?>
 
         <form class="formulaire formulaire-evenement" method="post">
             <h2>Créer un événement</h2>
@@ -172,7 +194,10 @@ $evenements = mysqli_query(
     </section>
 
     <section class="planning">
-        <div class="titre-planning"><p class="petit-titre">Programme à venir</p><h2>Événements publiés</h2></div>
+        <div class="titre-planning">
+            <p class="petit-titre">Programme à venir</p>
+            <h2>Événements publiés</h2>
+        </div>
         <?php if ($evenements === []): ?>
             <p>Aucun événement à venir.</p>
         <?php else: ?>
@@ -181,10 +206,12 @@ $evenements = mysqli_query(
                     <article class="carte-evenement">
                         <div class="details-evenement">
                             <h3><?= h($evenement['titre']) ?></h3>
-                            <p><?= h(date('d/m/Y à H\hi', strtotime($evenement['date_debut']))) ?>
+                            <p>
+                                <?= h(date('d/m/Y à H\hi', strtotime($evenement['date_debut']))) ?>
                                 · <?= h($evenement['salle'] ?? 'Salle à préciser') ?>
                                 · <?= h($evenement['jeu'] ?? 'Jeu à préciser') ?>
-                                · <?= (int) $evenement['nombre_place'] ?> places</p>
+                                · <?= (int) $evenement['nombre_place'] ?> places
+                            </p>
                         </div>
                     </article>
                 <?php endforeach; ?>

@@ -12,6 +12,16 @@
     const jours = [];
     const aujourdHui = new Date();
     aujourdHui.setHours(12, 0, 0, 0);
+    const formatJour = new Intl.DateTimeFormat("fr-FR", { weekday: "short" });
+    const formatDateCourte = new Intl.DateTimeFormat("fr-FR", {
+        day: "numeric",
+        month: "short"
+    });
+    const formatDateLongue = new Intl.DateTimeFormat("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long"
+    });
 
     for (let i = 0; i < 7; i++) {
         const date = new Date(aujourdHui);
@@ -41,20 +51,9 @@
             const nombre = evenements.filter(
                 (evenement) => evenement.debut.slice(0, 10) === cle
             ).length;
-            const nom = index === 0
-                ? "Aujourd’hui"
-                : new Intl.DateTimeFormat("fr-FR", {
-                    weekday: "short"
-                }).format(date);
-            const dateCourte = new Intl.DateTimeFormat("fr-FR", {
-                day: "numeric",
-                month: "short"
-            }).format(date);
-            const libelleJour = new Intl.DateTimeFormat("fr-FR", {
-                weekday: "long",
-                day: "numeric",
-                month: "long"
-            }).format(date);
+            const nom = index === 0 ? "Aujourd’hui" : formatJour.format(date);
+            const dateCourte = formatDateCourte.format(date);
+            const libelleJour = formatDateLongue.format(date);
 
             return `
                 <button class="bouton-jour${cle === jourChoisi ? " actif" : ""}"
@@ -64,6 +63,7 @@
                     aria-label="${cle === cleDate(aujourdHui) ? "Aujourd’hui, " : ""}${libelleJour}, ${nombre} animation${nombre > 1 ? "s" : ""}"
                     aria-controls="liste-evenements"
                     tabindex="${cle === jourChoisi ? "0" : "-1"}"
+                    data-index="${index}"
                     data-date="${cle}">
                     <span class="nom-jour">${nom}</span>
                     <strong>${dateCourte}</strong>
@@ -75,11 +75,7 @@
         liste.setAttribute("aria-labelledby", `jour-${jourChoisi}`);
 
         const date = new Date(`${jourChoisi}T12:00:00`);
-        const dateLongue = new Intl.DateTimeFormat("fr-FR", {
-            weekday: "long",
-            day: "numeric",
-            month: "long"
-        }).format(date);
+        const dateLongue = formatDateLongue.format(date);
         dateTitre.textContent = jourChoisi === cleDate(new Date())
             ? `Aujourd’hui · ${dateLongue}`
             : dateLongue;
@@ -109,22 +105,24 @@
             const fin = evenement.fin.length > 10 && !horaireInconnu
                 ? `à ${evenement.fin.slice(11, 16)}`
                 : "Horaire à préciser";
-            const places = Number(evenement.places_disponibles);
-            const capacite = Number(evenement.capacite);
+            const places = evenement.places_disponibles;
+            const capacite = evenement.capacite;
             let reservation = "";
 
             if (donnees.role === "CLIENT") {
-                reservation = evenement.inscrit
-                    ? '<a href="mes-inscriptions.php">Place réservée</a>'
-                    : places > 0
-                        ? `<form method="post" action="inscrire-evenement.php">
-                            <input type="hidden" name="jeton_csrf" value="${echapper(donnees.jeton)}">
-                            <input type="hidden" name="id_evenement" value="${Number(evenement.id)}">
-                            <button class="bouton bouton-reserver" type="submit">Réserver</button>
-                        </form>`
-                        : '<span>Complet</span>';
+                if (evenement.inscrit) {
+                    reservation = '<a href="mes-inscriptions.php">Place réservée</a>';
+                } else if (places > 0) {
+                    reservation = `<form method="post" action="inscrire-evenement.php">
+                        <input type="hidden" name="jeton_csrf" value="${echapper(donnees.jeton)}">
+                        <input type="hidden" name="id_evenement" value="${evenement.id}">
+                        <button class="bouton bouton-reserver" type="submit">Réserver</button>
+                    </form>`;
+                } else {
+                    reservation = "<span>Complet</span>";
+                }
             } else if (!donnees.role) {
-                reservation = '<a href="login.php">Se connecter pour réserver</a>';
+                reservation = '<a href="connexion.php">Se connecter pour réserver</a>';
             }
 
             return `
@@ -143,8 +141,8 @@
                         </div>
                     </div>
                     <div class="places-disponibles">
-                        <strong>${Number.isFinite(places) ? places : 0}</strong>
-                        <span>places disponibles sur ${Number.isFinite(capacite) ? capacite : 0}</span>
+                        <strong>${places}</strong>
+                        <span>places disponibles sur ${capacite}</span>
                         ${reservation}
                     </div>
                 </article>`;
@@ -165,19 +163,17 @@
             return;
         }
 
-        const indexActuel = jours.findIndex(
-            (date) => cleDate(date) === bouton.dataset.date
-        );
+        const indexActuel = Number(bouton.dataset.index);
         let indexSuivant = indexActuel;
 
-        if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-            indexSuivant = (indexActuel + 1) % jours.length;
-        } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-            indexSuivant = (indexActuel - 1 + jours.length) % jours.length;
-        } else if (event.key === "Home") {
+        if (event.key === "Home") {
             indexSuivant = 0;
         } else if (event.key === "End") {
             indexSuivant = jours.length - 1;
+        } else if (["ArrowRight", "ArrowDown"].includes(event.key)) {
+            indexSuivant = (indexActuel + 1) % jours.length;
+        } else if (["ArrowLeft", "ArrowUp"].includes(event.key)) {
+            indexSuivant = (indexActuel - 1 + jours.length) % jours.length;
         } else {
             return;
         }
