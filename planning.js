@@ -7,6 +7,7 @@
     const evenements = donnees.evenements;
     const choixJour = document.querySelector("#choix-jour");
     const dateTitre = document.querySelector("#date-selectionnee");
+    const compteurEvenements = document.querySelector("#compteur-evenements");
     const liste = document.querySelector("#liste-evenements");
     const jours = [];
     const aujourdHui = new Date();
@@ -49,12 +50,20 @@
                 day: "numeric",
                 month: "short"
             }).format(date);
+            const libelleJour = new Intl.DateTimeFormat("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long"
+            }).format(date);
 
             return `
                 <button class="bouton-jour${cle === jourChoisi ? " actif" : ""}"
+                    id="jour-${cle}"
                     type="button" role="tab"
                     aria-selected="${cle === jourChoisi}"
+                    aria-label="${cle === cleDate(aujourdHui) ? "Aujourd’hui, " : ""}${libelleJour}, ${nombre} animation${nombre > 1 ? "s" : ""}"
                     aria-controls="liste-evenements"
+                    tabindex="${cle === jourChoisi ? "0" : "-1"}"
                     data-date="${cle}">
                     <span class="nom-jour">${nom}</span>
                     <strong>${dateCourte}</strong>
@@ -63,6 +72,7 @@
                     </span>
                 </button>`;
         }).join("");
+        liste.setAttribute("aria-labelledby", `jour-${jourChoisi}`);
 
         const date = new Date(`${jourChoisi}T12:00:00`);
         const dateLongue = new Intl.DateTimeFormat("fr-FR", {
@@ -77,6 +87,7 @@
         const duJour = evenements
             .filter((evenement) => evenement.debut.slice(0, 10) === jourChoisi)
             .sort((a, b) => a.debut.localeCompare(b.debut));
+        compteurEvenements.textContent = `${duJour.length} animation${duJour.length > 1 ? "s" : ""}`;
 
         if (duJour.length === 0) {
             liste.innerHTML = `
@@ -99,6 +110,7 @@
                 ? `à ${evenement.fin.slice(11, 16)}`
                 : "Horaire à préciser";
             const places = Number(evenement.places_disponibles);
+            const capacite = Number(evenement.capacite);
             let reservation = "";
 
             if (donnees.role === "CLIENT") {
@@ -132,7 +144,7 @@
                     </div>
                     <div class="places-disponibles">
                         <strong>${Number.isFinite(places) ? places : 0}</strong>
-                        <span>places restantes</span>
+                        <span>places disponibles sur ${Number.isFinite(capacite) ? capacite : 0}</span>
                         ${reservation}
                     </div>
                 </article>`;
@@ -145,6 +157,35 @@
             jourChoisi = bouton.dataset.date;
             afficher();
         }
+    });
+
+    choixJour.addEventListener("keydown", (event) => {
+        const bouton = event.target.closest("[data-date]");
+        if (!bouton) {
+            return;
+        }
+
+        const indexActuel = jours.findIndex(
+            (date) => cleDate(date) === bouton.dataset.date
+        );
+        let indexSuivant = indexActuel;
+
+        if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+            indexSuivant = (indexActuel + 1) % jours.length;
+        } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+            indexSuivant = (indexActuel - 1 + jours.length) % jours.length;
+        } else if (event.key === "Home") {
+            indexSuivant = 0;
+        } else if (event.key === "End") {
+            indexSuivant = jours.length - 1;
+        } else {
+            return;
+        }
+
+        event.preventDefault();
+        jourChoisi = cleDate(jours[indexSuivant]);
+        afficher();
+        choixJour.querySelector(`[data-date="${jourChoisi}"]`).focus();
     });
 
     afficher();

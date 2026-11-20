@@ -2,7 +2,7 @@
 date_default_timezone_set('Europe/Paris');
 
 $host = "localhost";
-$dbname = "hotel_pixel";
+$dbname = "hotel";
 $username ="root";
 $password = "";
 $conn = mysqli_connect($host, $username, $password, $dbname);

@@ -117,8 +117,9 @@ $jetonCsrf = jeton_csrf();
                 <span class="texte-jour">Au programme</span>
                 <h3 id="date-selectionnee"></h3>
             </div>
+            <span class="compteur-evenements" id="compteur-evenements" aria-live="polite"></span>
         </div>
-        <div class="liste-evenements" id="liste-evenements" aria-live="polite"></div>
+        <div class="liste-evenements" id="liste-evenements" role="tabpanel" tabindex="0" aria-live="polite"></div>
     </section>
 </main>
 
