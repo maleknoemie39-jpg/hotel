@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/initialisation.php';
+require_once __DIR__ . '/config.php';
 
 // Garder la session active entre les pages du site.
 if (session_status() !== PHP_SESSION_ACTIVE) {
