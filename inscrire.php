@@ -4,9 +4,15 @@ declare(strict_types=1);
 require_once __DIR__ . '/commun.php';
 
 $erreur = '';
+$confirmation = $_SESSION['confirmation_inscription'] ?? null;
+unset($_SESSION['confirmation_inscription']);
+$inscriptionTerminee = is_array($confirmation);
+$confirmationEnvoyee = $inscriptionTerminee && ($confirmation['envoyee'] ?? false) === true;
+$emailConfirmation = $inscriptionTerminee && is_string($confirmation['email'] ?? null)
+    ? $confirmation['email']
+    : '';
 $formulaireEnvoye = $_SERVER['REQUEST_METHOD'] === 'POST';
 
-// Le jeton vérifie que le formulaire vient bien de cette page.
 if ($formulaireEnvoye && !verifier_csrf()) {
     $erreur = 'La page a expiré. Rechargez-la puis réessayez.';
 } elseif ($formulaireEnvoye) {
@@ -16,7 +22,6 @@ if ($formulaireEnvoye && !verifier_csrf()) {
     $motDePasse = (string) ($_POST['mot_de_passe'] ?? '');
     $confirmation = (string) ($_POST['confirmation'] ?? '');
 
-    // Vérifier les informations avant de créer le compte.
     if ($prenom === '' || $nom === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $erreur = 'Renseignez votre prénom, votre nom et une adresse e-mail valide.';
     } elseif (strlen($motDePasse) < 12) {
@@ -24,7 +29,6 @@ if ($formulaireEnvoye && !verifier_csrf()) {
     } elseif ($motDePasse !== $confirmation) {
         $erreur = 'Les deux mots de passe ne correspondent pas.';
     } else {
-        // Enregistrer le mot de passe sous forme protégée, jamais en clair.
         $hachage = password_hash($motDePasse, PASSWORD_DEFAULT);
         $requeteNouveauCompte = mysqli_prepare(
             $conn,
@@ -38,7 +42,13 @@ if ($formulaireEnvoye && !verifier_csrf()) {
             $idUtilisateur = mysqli_insert_id($conn);
             mysqli_stmt_close($requeteNouveauCompte);
 
-            // Connecter automatiquement le nouveau client.
+            try {
+                envoyer_confirmation_inscription($email, $prenom);
+                $confirmationEnvoyee = true;
+            } catch (RuntimeException $exception) {
+                error_log($exception->getMessage());
+            }
+
             session_regenerate_id(true);
             $_SESSION['utilisateur'] = [
                 'id' => $idUtilisateur,
@@ -47,12 +57,15 @@ if ($formulaireEnvoye && !verifier_csrf()) {
                 'role' => 'CLIENT',
             ];
             unset($_SESSION['jeton_csrf']);
-            header('Location: index.php');
+            $_SESSION['confirmation_inscription'] = [
+                'email' => $email,
+                'envoyee' => $confirmationEnvoyee,
+            ];
+            header('Location: inscrire.php');
             exit;
         } catch (mysqli_sql_exception $exception) {
             mysqli_stmt_close($requeteNouveauCompte);
             if ((int) $exception->getCode() === 1062) {
-                // L'adresse e-mail est déjà utilisée.
                 $erreur = 'Cette adresse e-mail possède déjà un compte.';
             } else {
                 throw $exception;
@@ -90,20 +103,35 @@ $jeton = jeton_csrf();
         <?php if ($erreur !== ''): ?>
             <p class="message-erreur" role="alert"><?= h($erreur) ?></p>
         <?php endif; ?>
-        <form class="formulaire formulaire-inscription" method="post">
-            <input type="hidden" name="jeton_csrf" value="<?= h($jeton) ?>">
-            <label for="prenom">Prénom</label>
-            <input id="prenom" type="text" name="prenom" maxlength="50" autocomplete="given-name" required>
-            <label for="nom">Nom</label>
-            <input id="nom" type="text" name="nom" maxlength="50" autocomplete="family-name" required>
-            <label for="email">Adresse e-mail</label>
-            <input id="email" type="email" name="email" maxlength="120" autocomplete="email" required>
-            <label for="mot_de_passe">Mot de passe (12 caractères minimum)</label>
-            <input id="mot_de_passe" type="password" name="mot_de_passe" minlength="12" autocomplete="new-password" required>
-            <label for="confirmation">Confirmer le mot de passe</label>
-            <input id="confirmation" type="password" name="confirmation" minlength="12" autocomplete="new-password" required>
-            <button class="bouton" type="submit">Créer mon compte</button>
-        </form>
+        <?php if ($inscriptionTerminee): ?>
+            <?php if ($confirmationEnvoyee): ?>
+                <p class="message-info" role="status">
+                    Votre compte est créé. Un e-mail de confirmation a été envoyé à
+                    <?= h($emailConfirmation) ?>.
+                </p>
+            <?php else: ?>
+                <p class="message-erreur" role="alert">
+                    Votre compte est créé, mais l’e-mail de confirmation n’a pas pu être envoyé.
+                    Le service d’envoi doit être configuré. Vous êtes connecté et pouvez continuer.
+                </p>
+            <?php endif; ?>
+            <p class="lien-formulaire"><a href="index.php">Continuer vers le planning</a></p>
+        <?php else: ?>
+            <form class="formulaire formulaire-inscription" method="post">
+                <input type="hidden" name="jeton_csrf" value="<?= h($jeton) ?>">
+                <label for="prenom">Prénom</label>
+                <input id="prenom" type="text" name="prenom" maxlength="50" autocomplete="given-name" required>
+                <label for="nom">Nom</label>
+                <input id="nom" type="text" name="nom" maxlength="50" autocomplete="family-name" required>
+                <label for="email">Adresse e-mail</label>
+                <input id="email" type="email" name="email" maxlength="120" autocomplete="email" required>
+                <label for="mot_de_passe">Mot de passe (12 caractères minimum)</label>
+                <input id="mot_de_passe" type="password" name="mot_de_passe" minlength="12" autocomplete="new-password" required>
+                <label for="confirmation">Confirmer le mot de passe</label>
+                <input id="confirmation" type="password" name="confirmation" minlength="12" autocomplete="new-password" required>
+                <button class="bouton" type="submit">Créer mon compte</button>
+            </form>
+        <?php endif; ?>
     </section>
 </main>
 </body>

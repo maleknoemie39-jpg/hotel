@@ -194,3 +194,116 @@ INSERT INTO lier (id_evenement, id_jeu)
 SELECT id_evenement, FLOOR(1 + RAND() * 41)
 FROM evenement
 WHERE id_evenement BETWEEN 1 AND 21;
+INSERT INTO evenement
+(titre, type_evenement, description, date_debut, date_fin, nombre_place, statut, date_creation)
+VALUES
+
+(
+'Tournoi Fortnite',
+'Tournoi',
+'Participez à un tournoi Fortnite en solo. Affrontez les autres joueurs et tentez de terminer à la première place pour remporter la victoire.',
+'2026-12-05 14:00:00',
+'2026-12-05 18:00:00',
+100,
+'Publié',
+NOW()
+),
+
+(
+'Soirée Mario Kart 8 Deluxe',
+'Soirée gaming',
+'Venez participer à une soirée conviviale sur Mario Kart 8 Deluxe. Affrontez vos amis et les autres participants dans plusieurs courses.',
+'2026-12-08 18:00:00',
+'2026-12-08 22:00:00',
+32,
+'Publié',
+NOW()
+),
+
+(
+'Tournoi EA Sports FC 26',
+'Tournoi',
+'Affrontez les autres participants dans un tournoi de football sur EA Sports FC 26. Chaque joueur devra remporter ses matchs pour accéder à la finale.',
+'2026-12-12 13:00:00',
+'2026-12-12 19:00:00',
+64,
+'Publié',
+NOW()
+),
+
+(
+'LAN Party Gaming',
+'LAN Party',
+'Participez à une journée entièrement consacrée aux jeux vidéo. Retrouvez d autres joueurs, formez des équipes et profitez de plusieurs jeux en réseau.',
+'2026-12-19 10:00:00',
+'2026-12-19 22:00:00',
+50,
+'Publié',
+NOW()
+),
+
+(
+'Tournoi Valorant',
+'Tournoi',
+'Formez une équipe et participez à une compétition Valorant. Les équipes s affronteront dans plusieurs manches pour déterminer les gagnants.',
+'2027-01-09 14:00:00',
+'2027-01-09 20:00:00',
+40,
+'Publié',
+NOW()
+),
+
+(
+'Soirée Minecraft',
+'Soirée gaming',
+'Retrouvez d autres joueurs pour une soirée Minecraft. Au programme : construction, exploration et mini-jeux en équipe.',
+'2027-01-15 18:00:00',
+'2027-01-15 23:00:00',
+30,
+'Publié',
+NOW()
+),
+
+(
+'Tournoi Super Smash Bros Ultimate',
+'Tournoi',
+'Participez à un tournoi Super Smash Bros Ultimate et affrontez les autres joueurs dans des combats en plusieurs manches.',
+'2027-01-23 14:00:00',
+'2027-01-23 19:00:00',
+24,
+'En attente',
+NOW()
+),
+
+(
+'Découverte des jeux indépendants',
+'Découverte',
+'Découvrez une sélection de jeux vidéo indépendants. Testez différents univers et partagez vos impressions avec les autres participants.',
+'2027-02-06 10:00:00',
+'2027-02-06 17:00:00',
+35,
+'Publié',
+NOW()
+),
+
+(
+'Tournoi Rocket League',
+'Tournoi',
+'Participez à une compétition Rocket League en équipe. Affrontez les autres participants dans des matchs dynamiques et tentez de remporter le tournoi.',
+'2027-02-13 14:00:00',
+'2027-02-13 19:00:00',
+32,
+'Publié',
+NOW()
+),
+
+(
+'Soirée rétrogaming',
+'Soirée gaming',
+'Revivez les grands classiques du jeu vidéo avec une soirée consacrée aux anciennes consoles et aux jeux rétro. Plusieurs jeux seront disponibles.',
+'2027-02-20 17:00:00',
+'2027-02-20 22:00:00',
+40,
+'Brouillon',
+NOW()
+);

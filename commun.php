@@ -2,8 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
-// Garder la session active entre les pages du site.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_set_cookie_params([
         'httponly' => true,
@@ -12,13 +12,11 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Afficher du texte sans laisser interpréter du code HTML.
 function h(string $valeur): string
 {
     return htmlspecialchars($valeur, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-// Créer et vérifier le jeton qui protège les formulaires.
 function jeton_csrf(): string
 {
     if (!isset($_SESSION['jeton_csrf'])) {
@@ -39,7 +37,6 @@ function verifier_csrf(): bool
     return hash_equals($_SESSION['jeton_csrf'], $jeton);
 }
 
-// Renvoyer le compte connecté, ou null si personne n'est connecté.
 function utilisateur_connecte(): ?array
 {
     if (!isset($_SESSION['utilisateur']) || !is_array($_SESSION['utilisateur'])) {
@@ -49,7 +46,6 @@ function utilisateur_connecte(): ?array
     return $_SESSION['utilisateur'];
 }
 
-// Empêcher l'accès à une page si le compte n'a pas le bon rôle.
 function exiger_role(string $role): array
 {
     $utilisateur = utilisateur_connecte();
@@ -59,4 +55,51 @@ function exiger_role(string $role): array
     }
 
     return $utilisateur;
+}
+
+function envoyer_confirmation_inscription(string $adresse, string $prenom): void
+{
+    $hote = getenv('HOTEL_SMTP_HOST');
+    $port = filter_var(getenv('HOTEL_SMTP_PORT'), FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1, 'max_range' => 65535],
+    ]);
+    $utilisateur = getenv('HOTEL_SMTP_USERNAME');
+    $motDePasse = getenv('HOTEL_SMTP_PASSWORD');
+    $expediteur = getenv('HOTEL_EMAIL_FROM');
+    $chiffrement = getenv('HOTEL_SMTP_ENCRYPTION');
+
+    if (
+        !$hote || $port === false || !$utilisateur || !$motDePasse
+        || !$expediteur || !filter_var($expediteur, FILTER_VALIDATE_EMAIL)
+        || !in_array($chiffrement, ['tls', 'ssl'], true)
+    ) {
+        throw new RuntimeException('Configuration SMTP manquante ou invalide.');
+    }
+
+    $courriel = new PHPMailer\PHPMailer\PHPMailer(true);
+    $courriel->isSMTP();
+    $courriel->Host = $hote;
+    $courriel->SMTPAuth = true;
+    $courriel->Username = $utilisateur;
+    $courriel->Password = $motDePasse;
+    $courriel->Port = $port;
+    $courriel->SMTPSecure = $chiffrement === 'ssl'
+        ? PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
+        : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+    $courriel->CharSet = 'UTF-8';
+    $courriel->setFrom($expediteur, 'Les événements de l’hôtel');
+    $courriel->addAddress($adresse);
+    $courriel->isHTML(false);
+    $courriel->Subject = 'Confirmation de votre inscription';
+    $prenom = str_replace(["\r", "\n"], ' ', $prenom);
+    $courriel->Body = "Bonjour {$prenom},\n\n"
+        . "Votre compte client sur le site des événements de l’hôtel a bien été créé. "
+        . "Vous pouvez maintenant consulter le planning et vous connecter à votre compte.\n\n"
+        . "À bientôt !";
+
+    try {
+        $courriel->send();
+    } catch (PHPMailer\PHPMailer\Exception $exception) {
+        throw new RuntimeException('Échec de l’envoi SMTP : ' . $courriel->ErrorInfo, 0, $exception);
+    }
 }

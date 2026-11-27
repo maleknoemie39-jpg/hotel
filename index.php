@@ -4,43 +4,48 @@ declare(strict_types=1);
 require_once __DIR__ . '/commun.php';
 
 $utilisateur = utilisateur_connecte();
-$idUtilisateur = 0;
-if ($utilisateur !== null) {
-    $idUtilisateur = (int) $utilisateur['id'];
+$aujourdhui = new DateTimeImmutable('today');
+$dateDemandee = (string) ($_GET['semaine'] ?? $aujourdhui->format('Y-m-d'));
+$dateDebut = DateTimeImmutable::createFromFormat('!Y-m-d', $dateDemandee);
+$erreursDate = DateTimeImmutable::getLastErrors();
+if (
+    $dateDebut === false
+    || $dateDebut->format('Y-m-d') !== $dateDemandee
+    || ($erreursDate !== false && ($erreursDate['warning_count'] > 0 || $erreursDate['error_count'] > 0))
+    || $dateDebut < $aujourdhui
+) {
+    $dateDebut = $aujourdhui;
 }
-$dateDebut = new DateTimeImmutable('today');
 $dateFin = $dateDebut->modify('+7 days');
+$semainePrecedente = $dateDebut->modify('-7 days');
+if ($semainePrecedente < $aujourdhui) {
+    $semainePrecedente = $aujourdhui;
+}
+$semaineSuivante = $dateDebut->modify('+7 days');
 
-// Charger les événements publiés de la semaine et compter les places réservées.
 $sqlEvenements = "SELECT e.id_evenement, e.titre, e.description, e.type_evenement,
-               e.date_debut, e.date_fin, e.nombre_place,
+               e.date_debut, e.date_fin,
                GROUP_CONCAT(DISTINCT j.titre ORDER BY j.titre SEPARATOR ', ') AS jeux,
-               GROUP_CONCAT(DISTINCT s.nom ORDER BY s.nom SEPARATOR ', ') AS salles,
-               (SELECT COUNT(*) FROM inscrire i
-                WHERE i.id_evenement = e.id_evenement AND i.statut = 'CONFIRMEE') AS places_prises,
-               (SELECT COUNT(*) FROM inscrire i
-                WHERE i.id_evenement = e.id_evenement AND i.id_utilisateur = ? AND i.statut = 'CONFIRMEE') AS inscrit
+               GROUP_CONCAT(DISTINCT s.nom ORDER BY s.nom SEPARATOR ', ') AS salles
         FROM evenement e
         LEFT JOIN lier l ON l.id_evenement = e.id_evenement
         LEFT JOIN jeux j ON j.id_jeu = l.id_jeu
         LEFT JOIN derouler d ON d.id_evenement = e.id_evenement
         LEFT JOIN salle s ON s.id_salle = d.id_salle
-        WHERE e.statut = 'PUBLIE' AND e.date_debut >= ? AND e.date_debut < ?
+        WHERE e.statut IN ('PUBLIE', 'Publié') AND e.date_debut >= ? AND e.date_debut < ?
         GROUP BY e.id_evenement, e.titre, e.description, e.type_evenement,
-                 e.date_debut, e.date_fin, e.nombre_place
+                 e.date_debut, e.date_fin
         ORDER BY e.date_debut";
 $requeteEvenements = mysqli_prepare($conn, $sqlEvenements);
 $debutSql = $dateDebut->format('Y-m-d H:i:s');
 $finSql = $dateFin->format('Y-m-d H:i:s');
-mysqli_stmt_bind_param($requeteEvenements, 'iss', $idUtilisateur, $debutSql, $finSql);
+mysqli_stmt_bind_param($requeteEvenements, 'ss', $debutSql, $finSql);
 mysqli_stmt_execute($requeteEvenements);
 $evenementsBruts = mysqli_fetch_all(mysqli_stmt_get_result($requeteEvenements), MYSQLI_ASSOC);
 mysqli_stmt_close($requeteEvenements);
 
-// Préparer les informations que le planning JavaScript va afficher.
 $evenements = [];
 foreach ($evenementsBruts as $evenement) {
-    $capacite = (int) $evenement['nombre_place'];
     $evenements[] = [
         'id' => (int) $evenement['id_evenement'],
         'titre' => $evenement['titre'],
@@ -48,28 +53,10 @@ foreach ($evenementsBruts as $evenement) {
         'type' => $evenement['type_evenement'],
         'debut' => str_replace(' ', 'T', substr($evenement['date_debut'], 0, 16)),
         'fin' => str_replace(' ', 'T', substr($evenement['date_fin'], 0, 16)),
-        'capacite' => $capacite,
-        'places_disponibles' => max(0, $capacite - (int) $evenement['places_prises']),
-        'inscrit' => (int) $evenement['inscrit'] > 0,
         'salle' => $evenement['salles'] ?? '',
         'jeux' => $evenement['jeux'] ?? '',
     ];
 }
-
-// Choisir un message simple à afficher après une réservation.
-$messages = [
-    'inscrit' => 'Votre place est réservée. Retrouvez-la dans Mes inscriptions.',
-    'deja-inscrit' => 'Vous êtes déjà inscrit à cet événement.',
-    'complet' => 'Désolé, il ne reste plus de place pour cet événement.',
-    'indisponible' => 'Cet événement n’est plus disponible à la réservation.',
-    'erreur' => 'La demande n’a pas pu être vérifiée. Rechargez la page.',
-];
-$cleMessage = $_GET['message'] ?? '';
-$message = '';
-if (is_string($cleMessage)) {
-    $message = $messages[$cleMessage] ?? '';
-}
-$jetonCsrf = jeton_csrf();
 ?>
 <!doctype html>
 <html lang="fr">
@@ -97,8 +84,6 @@ $jetonCsrf = jeton_csrf();
             <nav class="navigation-compte" aria-label="Compte">
                 <?php if ($utilisateur['role'] === 'ADMIN'): ?>
                     <a href="admin.php">Gestion des événements</a>
-                <?php else: ?>
-                    <a href="mes-inscriptions.php">Mes inscriptions</a>
                 <?php endif; ?>
                 <a href="deconnexion.php">Déconnexion</a>
             </nav>
@@ -115,13 +100,21 @@ $jetonCsrf = jeton_csrf();
     </section>
 
     <section class="planning" id="planning" aria-labelledby="titre-planning">
-        <?php if ($message !== ''): ?>
-            <p class="message-info" role="status"><?= h($message) ?></p>
-        <?php endif; ?>
         <div class="titre-planning">
             <p class="petit-titre">À l’hôtel cette semaine</p>
             <h2 id="titre-planning">Planning de la semaine</h2>
-            <p>Choisissez une journée pour consulter le programme.</p>
+            <nav class="navigation-semaine" aria-label="Naviguer entre les semaines">
+                <?php if ($semainePrecedente >= $dateDebut): ?>
+                    <span class="bouton bouton-secondaire bouton-desactive" aria-disabled="true"> Semaine précédente</span>
+                <?php else: ?>
+                    <a class="bouton bouton-secondaire" href="?semaine=<?= h($semainePrecedente->format('Y-m-d')) ?>">
+                        Semaine précédente
+                    </a>
+                <?php endif; ?>
+                <a class="bouton bouton-secondaire" href="?semaine=<?= h($semaineSuivante->format('Y-m-d')) ?>">
+                    Semaine suivante
+                </a>
+            </nav>
         </div>
         <nav class="choix-jour" id="choix-jour" aria-label="Choisir le jour du planning" role="tablist"></nav>
         <div class="jour-selectionne">
@@ -136,7 +129,7 @@ $jetonCsrf = jeton_csrf();
 </main>
 
 <script id="donnees-evenements" type="application/json"><?= json_encode(
-    ['evenements' => $evenements, 'role' => $utilisateur['role'] ?? '', 'jeton' => $jetonCsrf],
+    ['evenements' => $evenements, 'dateDebut' => $dateDebut->format('Y-m-d')],
     JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
 ) ?></script>
 <script src="planning.js?v=<?= filemtime(__DIR__ . '/planning.js') ?>" defer></script>

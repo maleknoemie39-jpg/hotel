@@ -1,569 +1,118 @@
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: #f3f5f7;
-  color: #202a36;
-  font: 15px/1.6 "Segoe UI", Arial, sans-serif;
-}
-
-.entete {
-  padding: 18px 20px;
-  background: #202a36;
-}
-
-.contenu-entete,
-.page-principale {
-  width: min(100% - 40px, 1040px);
-  margin: 0 auto;
-}
-
-.contenu-entete {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.navigation-compte {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
-}
-
-.navigation-compte a {
-  color: #fff;
-  font-size: 13px;
-  text-decoration: none;
-}
-
-.navigation-compte a:hover {
-  text-decoration: underline;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: white;
-  font-weight: bold;
-  text-decoration: none;
-}
-
-.logo img {
-  width: 72px;
-  height: 72px;
-  border-radius: 8px;
-  object-fit: cover;
-  object-position: center;
-}
-
-.logo small {
-  display: block;
-  color: #bdc9cd;
-  font-size: 10px;
-  font-weight: normal;
-}
-
-.page-principale {
-  margin-top: 36px;
-  margin-bottom: 50px;
-}
-
-.introduction {
-  margin-bottom: 24px;
-  padding: 40px;
-  border-radius: 12px;
-  background: #253640;
-  color: white;
-}
-
-.petit-titre {
-  margin: 0 0 8px;
-  color: #477a70;
-  font-size: 11px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.introduction .petit-titre {
-  color: #bce6d9;
-}
-
-.introduction h1 {
-  margin: 0;
-  font-size: clamp(34px, 5vw, 52px);
-  line-height: 1.15;
-}
-
-.texte-introduction {
-  margin: 12px 0 0;
-  color: #d3dce0;
-}
-
-.lien-principal {
-  display: inline-block;
-  margin-top: 18px;
-  padding: 10px 14px;
-  border-radius: 5px;
-  background: #d9eee6;
-  color: #263d39;
-  font-weight: bold;
-  text-decoration: none;
-}
-
-.lien-principal:hover {
-  background: white;
-}
-
-.planning {
-  padding: 26px;
-  border: 1px solid #e2e7eb;
-  border-radius: 12px;
-  background: white;
-}
-
-.titre-planning {
-  margin-bottom: 18px;
-}
-
-.titre-planning .petit-titre {
-  margin-bottom: 4px;
-}
-
-.titre-planning h2 {
-  margin: 0;
-  font-size: 22px;
-}
-
-.titre-planning p:last-child {
-  margin: 4px 0 0;
-  color: #6d7783;
-}
-
-.choix-jour {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  margin-bottom: 22px;
-}
-
-.bouton-jour {
-  min-width: 0;
-  padding: 10px;
-  border: 1px solid #e2e7eb;
-  border-radius: 8px;
-  background: #fafbfc;
-  color: #202a36;
-  cursor: pointer;
-  text-align: left;
-}
-
-.bouton-jour:hover,
-.bouton-jour.actif {
-  border-color: #477a70;
-  background: #e8f1ee;
-}
-
-.bouton-jour span,
-.bouton-jour strong {
-  display: block;
-}
-
-.nom-jour,
-.nombre-evenements {
-  color: #6d7783;
-  font-size: 11px;
-}
-
-.nombre-evenements {
-  overflow: hidden;
-  margin-top: 4px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.jour-selectionne {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e2e7eb;
-}
-
-.texte-jour {
-  color: #477a70;
-  font-size: 11px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.jour-selectionne h3 {
-  margin: 4px 0 0;
-  font-size: 17px;
-}
-
-.compteur-evenements {
-  padding: 5px 10px;
-  border: 1px solid #e2e7eb;
-  border-radius: 20px;
-  color: #6d7783;
-  font-size: 11px;
-}
-
-.liste-evenements {
-  display: grid;
-  gap: 10px;
-}
-
-.carte-evenement {
-  display: grid;
-  grid-template-columns: 75px minmax(0, 1fr) 120px;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
-  border: 1px solid #e2e7eb;
-  border-radius: 8px;
-}
-
-.horaire-evenement {
-  text-align: center;
-}
-
-.horaire-evenement strong,
-.horaire-evenement span {
-  display: block;
-}
-
-.horaire-evenement strong {
-  color: #315d55;
-  font-size: 17px;
-}
-
-.horaire-evenement span,
-.details-evenement > p {
-  color: #6d7783;
-  font-size: 11px;
-}
-
-.informations-evenement {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.etiquette {
-  color: #477a70;
-  font-size: 10px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.statut-evenement {
-  color: #315d55;
-  font-size: 10px;
-}
-
-.statut-evenement i {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.details-evenement h4 {
-  margin: 4px 0;
-}
-
-.details-evenement > p {
-  margin: 0;
-}
-
-.informations-supplementaires {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
-  color: #53625e;
-  font-size: 10px;
-}
-
-.places-disponibles {
-  text-align: center;
-}
-
-.places-disponibles strong,
-.places-disponibles span {
-  display: block;
-}
-
-.places-disponibles strong {
-  color: #7765ae;
-  font-size: 18px;
-}
-
-.places-disponibles span {
-  color: #6d7783;
-  font-size: 10px;
-}
-
-.bouton,
-.bouton-reserver {
-  display: inline-block;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 6px;
-  background: #477a70;
-  color: #fff;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 700;
-  text-align: center;
-  text-decoration: none;
-}
-
-.bouton:hover,
-.bouton-reserver:hover {
-  background: #315d55;
-}
-
-.bouton-secondaire {
-  background: #6d7783;
-}
-
-.bouton-reserver {
-  margin-top: 7px;
-  padding: 7px 10px;
-  font-size: 11px;
-}
-
-.places-disponibles a {
-  display: block;
-  margin-top: 7px;
-  color: #315d55;
-  font-size: 11px;
-  line-height: 1.35;
-}
-
-.places-disponibles form {
-  margin: 0;
-}
-
-.message-info,
-.message-erreur {
-  padding: 12px 14px;
-  border-radius: 7px;
-}
-
-.message-info {
-  background: #e8f1ee;
-  color: #315d55;
-}
-
-.message-erreur {
-  background: #fff0ef;
-  color: #9c3028;
-}
-
-.compte-page h1 {
-  margin-top: 0;
-}
-
-.formulaires-compte {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  margin-top: 20px;
-}
-
-.formulaire-connexion-conteneur {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.formulaire-connexion {
-  width: min(100%, 440px);
-  justify-self: center;
-}
-
-.formulaire {
-  display: grid;
-  align-content: start;
-  gap: 9px;
-}
-
-.formulaire h2 {
-  margin: 0 0 8px;
-  font-size: 19px;
-}
-
-.formulaire label {
-  margin-top: 5px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.formulaire input,
-.formulaire textarea,
-.formulaire select {
-  width: 100%;
-  min-height: 42px;
-  padding: 9px 10px;
-  border: 1px solid #cbd4d2;
-  border-radius: 6px;
-  background: #fff;
-  color: #202a36;
-  font: inherit;
-}
-
-.formulaire textarea {
-  resize: vertical;
-}
-
-.formulaire .bouton {
-  justify-self: start;
-  margin-top: 10px;
-}
-
-.formulaire-evenement {
-  max-width: 720px;
-  margin-top: 24px;
-}
-
-.formulaire-inscription {
-  max-width: 560px;
-  margin: 20px auto 0;
-}
-
-.lien-formulaire {
-  margin: 22px 0 0;
-  text-align: center;
-}
-
-.lien-formulaire a {
-  color: #315d55;
-  font-weight: 700;
-}
-
-.champs-cotes {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.champs-cotes > div {
-  display: grid;
-  gap: 8px;
-}
-
-.aucun-evenement {
-  padding: 28px;
-  border: 1px dashed #cbd4d2;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.aucun-evenement p {
-  margin: 5px 0 0;
-  color: #6d7783;
-}
-
-button:focus-visible,
-a:focus-visible {
-  outline: 2px solid #477a70;
-  outline-offset: 3px;
-}
-
-@media (max-width: 760px) {
-  .page-principale {
-    width: calc(100% - 28px);
-  }
-
-  .contenu-entete {
-    align-items: flex-start;
-  }
-
-  .navigation-compte {
-    justify-content: flex-end;
-    gap: 8px 12px;
-    margin-top: 24px;
-  }
-
-  .choix-jour {
-    display: flex;
-    overflow-x: auto;
-  }
-
-  .bouton-jour {
-    flex: 0 0 95px;
-  }
-
-  .planning {
-    padding: 20px 16px;
-  }
-}
-
-@media (max-width: 520px) {
-  .entete {
-    padding: 15px 0;
-  }
-
-  .contenu-entete {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .navigation-compte {
-    justify-content: flex-start;
-  }
-
-  .formulaires-compte,
-  .champs-cotes {
-    grid-template-columns: 1fr;
-  }
-
-  .logo img {
-    width: 56px;
-    height: 56px;
-  }
-
-  .page-principale {
-    width: calc(100% - 22px);
-    margin-top: 16px;
-  }
-
-  .introduction {
-    padding: 28px 20px;
-  }
-
-  .planning {
-    padding: 16px 12px;
-  }
-
-  .carte-evenement {
-    grid-template-columns: 55px 1fr;
-    gap: 10px;
-    padding: 12px 9px;
-  }
-
-  .places-disponibles {
-    display: flex;
-    grid-column: 2;
-    gap: 5px;
-    border-top: 1px solid #e2e7eb;
-    padding-top: 8px;
-    text-align: left;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+*{box-sizing:border-box}
+:root{
+--green-900:#183b35;--green-700:#347866;--green-600:#4d927f;
+--green-100:#edf5f1;--green-50:#f7faf8;--ink:#202a30;
+--muted:#6d787d;--line:#dde5e1;--paper:#fff;--background:#f1f4f2;
+--warm:#f5f1e7;--danger:#a44d45;--shadow:0 10px 28px rgba(40,58,52,.08)
+}
+html{scroll-behavior:smooth}
+body{
+margin:0;background:radial-gradient(circle at 100% 0,rgba(77,146,127,.08),transparent 22rem),var(--background);
+color:var(--ink);font:14px/1.5 "Segoe UI",Arial,sans-serif
+}
+a,button,input,textarea,select{font-family:inherit}
+.entete{position:relative;z-index:20;border-bottom:1px solid rgba(24,59,53,.12);background:rgba(255,255,255,.96);box-shadow:0 2px 12px rgba(40,58,52,.04)}
+.contenu-entete,.page-principale{width:min(100% - 40px,1180px);margin:0 auto}
+.contenu-entete{display:flex;min-height:84px;align-items:center;justify-content:space-between;gap:24px}
+.logo{display:flex;align-items:center;gap:13px;color:var(--green-900);font-size:15px;font-weight:750;text-decoration:none;letter-spacing:-.1px}
+.logo img{width:58px;height:58px;border:1px solid var(--line);border-radius:10px;background:var(--paper);object-fit:cover;box-shadow:0 4px 12px rgba(40,58,52,.08)}
+.logo small{display:block;margin-top:2px;color:var(--green-600);font-size:9px;font-weight:700;letter-spacing:1.4px}
+.navigation-compte{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px}
+.navigation-compte a{padding:8px 10px;border-radius:7px;color:var(--green-900);font-size:12px;font-weight:650;text-decoration:none;transition:background 150ms ease,color 150ms ease}
+.navigation-compte a:hover{background:var(--green-100);color:var(--green-700)}
+.page-principale{margin-top:24px;margin-bottom:48px}
+.introduction{
+position:relative;margin-bottom:18px;overflow:hidden;padding:30px 34px;border:1px solid rgba(52,120,102,.14);
+border-radius:12px;background:linear-gradient(110deg,rgba(52,120,102,.08),transparent 58%),var(--paper);box-shadow:var(--shadow)
+}
+.petit-titre{position:relative;z-index:1;margin:0 0 5px;color:var(--green-600);font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase}
+.introduction h1{position:relative;z-index:1;margin:0;color:var(--green-900);font-size:clamp(28px,4vw,38px);line-height:1.15;letter-spacing:-1px}
+.texte-introduction{position:relative;z-index:1;max-width:650px;margin:8px 0 0;color:var(--muted);font-size:14px}
+.lien-principal{position:relative;z-index:1;display:inline-block;margin-top:16px;padding:9px 13px;border-radius:7px;background:var(--green-700);color:var(--paper);font-size:12px;font-weight:700;text-decoration:none;transition:background 150ms ease,transform 150ms ease}
+.lien-principal:hover{background:var(--green-900);transform:translateY(-1px)}
+.planning{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--paper);box-shadow:var(--shadow)}
+.titre-planning{display:grid;grid-template-columns:1fr auto;align-items:end;padding:18px 22px 16px;border-bottom:1px solid var(--line)}
+.titre-planning .petit-titre{grid-column:1/-1;margin-bottom:2px}
+.titre-planning h2{margin:0;color:var(--green-900);font-size:20px;line-height:1.25}
+.titre-planning p:last-child{margin:0;color:var(--muted);font-size:11px}
+.navigation-semaine{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;margin-top:12px}
+.navigation-semaine .bouton{margin-top:0}
+.bouton-desactive{opacity:.5;cursor:not-allowed}
+.choix-jour{display:grid;grid-template-columns:repeat(7,1fr);margin-left:58px;border-bottom:1px solid var(--line);background:var(--green-50)}
+.bouton-jour{min-width:0;min-height:66px;padding:8px 6px;border:0;border-right:1px solid var(--line);border-bottom:3px solid transparent;background:transparent;color:var(--ink);cursor:pointer;text-align:center;transition:background 150ms ease}
+.bouton-jour:last-child{border-right:0}
+.bouton-jour:hover{background:#f1f7f4}
+.bouton-jour.actif{border-bottom-color:var(--green-600);background:var(--green-100);color:var(--green-900)}
+.bouton-jour span,.bouton-jour strong{display:block}
+.nom-jour{color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+.bouton-jour strong{margin:2px 0 1px;font-size:13px}
+.nombre-evenements{overflow:hidden;color:var(--muted);font-size:8px;text-overflow:ellipsis;white-space:nowrap}
+.jour-selectionne{display:flex;min-height:52px;align-items:center;justify-content:space-between;gap:12px;padding:8px 22px;border-bottom:1px solid var(--line);background:var(--paper)}
+.texte-jour{display:none}
+.jour-selectionne h3{margin:0;color:var(--muted);font-size:12px;font-weight:650}
+.compteur-evenements{color:var(--green-700);font-size:11px;font-weight:700}
+.liste-evenements{overflow-x:auto;background:var(--paper)}
+.grille-semaine{position:relative;display:grid;grid-template-columns:58px minmax(760px,1fr);min-height:840px}
+.axe-heures{position:relative;height:840px;border-right:1px solid var(--line);background:#fbfcfb}
+.ligne-heure{position:absolute;right:0;left:0;height:1px;border-top:1px solid #edf1ef}
+.ligne-heure span{position:absolute;top:-9px;right:8px;padding:2px;background:#fbfcfb;color:#98a39f;font-size:9px;font-weight:650}
+.colonnes-semaine{position:relative;display:grid;grid-template-columns:repeat(7,minmax(108px,1fr));height:840px;background:repeating-linear-gradient(to bottom,transparent 0,transparent 59px,#edf1ef 59px,#edf1ef 60px)}
+.colonne-jour{position:relative;height:840px;border-right:1px solid var(--line)}
+.colonne-jour:last-child{border-right:0}
+.jour-aujourdhui{background:rgba(77,146,127,.025)}
+.colonne-jour.jour-actif{background:rgba(77,146,127,.08)}
+.bloc-evenement{position:absolute;right:5px;left:5px;z-index:2;overflow:hidden;padding:8px 8px 7px;border:0;border-left:4px solid #73b39f;border-radius:6px;background:#dfeee8;color:#24443c;box-shadow:0 3px 8px rgba(36,68,60,.10);transition:transform 150ms ease,box-shadow 150ms ease}
+.bloc-evenement:hover{z-index:5;transform:translateY(-1px);box-shadow:0 7px 16px rgba(36,68,60,.16)}
+.colonne-jour:nth-child(3n) .bloc-evenement{border-left-color:var(--green-700);background:#c8dfd7;color:var(--green-900)}
+.colonne-jour:nth-child(3n+1) .bloc-evenement{border-left-color:#8aab9f;background:#ebf2ef;color:#38554e}
+.bloc-heures{margin-bottom:3px;color:var(--green-700);font-size:9px;font-weight:800}
+.bloc-evenement h4{overflow:hidden;margin:0;font-size:11px;line-height:1.25;text-overflow:ellipsis;white-space:nowrap}
+.bloc-evenement p{overflow:hidden;margin:3px 0 0;color:#5d756d;font-size:8px;line-height:1.25;text-overflow:ellipsis;white-space:nowrap}
+.aucun-evenement,.message-info,.message-erreur{margin:16px;padding:20px;border-radius:8px;text-align:center}
+.aucun-evenement{border:1px dashed #cbd8d2;background:var(--green-50);color:var(--muted)}
+.message-info{background:var(--green-100);color:var(--green-900)}
+.message-erreur{background:#f8e9e7;color:var(--danger)}
+.compte-page{padding:22px}
+.compte-page h1{margin:0 0 14px;color:var(--green-900);font-size:24px}
+.formulaires-compte{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:20px}
+.formulaire-connexion-conteneur{grid-template-columns:minmax(0,1fr)}
+.formulaire-connexion{width:min(100%,440px);justify-self:center}
+.formulaire{display:grid;align-content:start;gap:9px;padding:18px;border:1px solid var(--line);border-radius:10px;background:var(--green-50)}
+.formulaire h2{margin:0 0 6px;color:var(--green-900);font-size:17px}
+.formulaire label{margin-top:4px;color:#46564f;font-size:12px;font-weight:700}
+.formulaire input,.formulaire textarea,.formulaire select{width:100%;min-height:42px;padding:9px 10px;border:1px solid #cbd7d1;border-radius:7px;background:var(--paper);color:var(--ink);font:14px "Segoe UI",Arial,sans-serif;transition:border 150ms ease,box-shadow 150ms ease}
+.formulaire input:focus,.formulaire textarea:focus,.formulaire select:focus{border-color:var(--green-600);outline:0;box-shadow:0 0 0 3px rgba(77,146,127,.12)}
+.formulaire textarea{resize:vertical}
+.bouton{justify-self:start;margin-top:8px;padding:9px 12px;border:0;border-radius:7px;background:var(--green-700);color:var(--paper);cursor:pointer;font-weight:700;text-align:center;text-decoration:none}
+.bouton:hover{background:var(--green-900)}
+.bouton-secondaire{background:#73837d}
+.bouton-danger{background:var(--danger)}
+.bouton-danger:hover{background:#833a34}
+.actions-formulaire,.actions-evenement{display:flex;align-items:center;gap:10px}
+.actions-evenement{justify-content:flex-end}
+.actions-formulaire .bouton,.actions-evenement .bouton{margin-top:0}
+.actions-evenement form{margin:0}
+.formulaire-evenement,.formulaire-inscription{max-width:720px}
+.lien-formulaire{margin:18px 0 0;text-align:center}
+.lien-formulaire a{color:var(--green-700);font-weight:750}
+.champs-cotes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.champs-cotes>div{display:grid;gap:8px}
+.liste-evenements>.carte-evenement{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;margin:10px 16px;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--green-50)}
+.details-evenement h4,.details-evenement h2{margin:3px 0;color:var(--green-900)}
+.details-evenement>p{margin:0;color:var(--muted);font-size:11px}
+.etiquette{color:var(--green-600);font-size:9px;font-weight:800;text-transform:uppercase}
+.statut-attente{color:#8a6718}
+.statut-brouillon{color:var(--muted)}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(77,146,127,.24);outline-offset:2px}
+@media (max-width:760px){
+.contenu-entete{align-items:flex-start}.navigation-compte{justify-content:flex-end}.choix-jour{margin-left:50px}
+.grille-semaine{grid-template-columns:50px minmax(760px,1fr)}.formulaires-compte,.champs-cotes{grid-template-columns:1fr}
+}
+@media (max-width:520px){
+.contenu-entete,.page-principale{width:calc(100% - 22px)}
+.contenu-entete{min-height:0;flex-direction:column;gap:8px;padding:10px 0}.navigation-compte{justify-content:flex-start}
+.logo img{width:50px;height:50px}.page-principale{margin-top:12px}.introduction{padding:22px 20px}
+.introduction h1{font-size:26px}.titre-planning{display:block;padding:14px}.titre-planning p:last-child{margin-top:3px}
+.jour-selectionne{padding:8px 14px}.liste-evenements>.carte-evenement{grid-template-columns:1fr}
+.actions-evenement{justify-content:flex-start}
 }

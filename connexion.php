@@ -6,14 +6,12 @@ require_once __DIR__ . '/commun.php';
 $erreur = '';
 $formulaireEnvoye = $_SERVER['REQUEST_METHOD'] === 'POST';
 
-// Le jeton vérifie que le formulaire vient bien de cette page.
 if ($formulaireEnvoye && !verifier_csrf()) {
     $erreur = 'La page a expiré. Rechargez-la puis réessayez.';
 } elseif ($formulaireEnvoye) {
     $email = strtolower(trim((string) ($_POST['email'] ?? '')));
     $motDePasse = (string) ($_POST['mot_de_passe'] ?? '');
 
-    // Chercher le compte qui correspond à l'adresse e-mail.
     $requeteCompte = mysqli_prepare(
         $conn,
         'SELECT u.id_utilisateur, u.nom, u.prenom, u.mot_de_passe,
@@ -28,7 +26,6 @@ if ($formulaireEnvoye && !verifier_csrf()) {
     $compte = mysqli_fetch_assoc(mysqli_stmt_get_result($requeteCompte));
     mysqli_stmt_close($requeteCompte);
 
-    // Comparer le mot de passe saisi avec celui enregistré.
     if ($compte === null || !password_verify($motDePasse, $compte['mot_de_passe'])) {
         $erreur = 'Adresse e-mail ou mot de passe incorrect.';
     } else {
@@ -37,7 +34,6 @@ if ($formulaireEnvoye && !verifier_csrf()) {
             $role = 'ADMIN';
         }
 
-        // Garder les informations du compte pour les prochaines pages.
         session_regenerate_id(true);
         $_SESSION['utilisateur'] = [
             'id' => (int) $compte['id_utilisateur'],
